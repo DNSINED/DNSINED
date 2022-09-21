@@ -11,8 +11,7 @@ from colormap import rgb2hex
 from PIL import Image
 from datetime import timedelta
 
-#test
-#test2
+
 SAVING_FRAMES_PER_SECOND = 10
 
 def format_timedelta(td):
@@ -27,7 +26,6 @@ def format_timedelta(td):
 
 
 def get_saving_frames_durations(cap, saving_fps):
-    """A function that returns the list of durations where to save the frames"""
     s = []
     clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     for i in np.arange(0, clip_duration, 1 / saving_fps):
