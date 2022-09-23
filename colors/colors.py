@@ -158,5 +158,6 @@ if __name__ == "__main__":
     path, _ = os.path.splitext(video_file)
     path += "_frames"
     files = os.listdir(path)
+    os.chdir(path) # magic!
     for frame in files:
         main_color(frame)
