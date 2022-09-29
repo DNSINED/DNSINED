@@ -11,9 +11,14 @@ import extcolors
 from colormap import rgb2hex
 from PIL import Image
 from datetime import timedelta
+import glob
 
 
 SAVING_FRAMES_PER_SECOND = 2
+global COLOR
+global OCCURENCE_RATE
+COLOR = []
+OCCURENCE_RATE = []
 
 def format_timedelta(td):
     result = str(td)
@@ -68,21 +73,12 @@ def main_color(frame):
     img = Image.open(input_name)
     wpercent = (output_width/float(img.size[0]))
     hsize = int((float(img.size[1])*float(wpercent)))
-    img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)
-
-    resize_name = 'resize_' + input_name  
-    img.save(resize_name)                 
-    img_url = resize_name
+    img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
+    img_url = input_name
     colors_x = extcolors.extract_from_path(img_url, tolerance = 12, limit = 12)
     colors_x
                     
-    def exact_color(input_image, resize, tolerance, zoom):
-        bg = 'bg.png'
-        fig, ax = plt.subplots(figsize=(192,108),dpi=10)
-        fig.set_facecolor('white')
-        plt.savefig(bg)
-        plt.close(fig)
-                        
+    def exact_color(input_image, resize, tolerance,limit):                
         output_width = resize
         img = Image.open(input_image)
         if img.size[0] >= resize:
@@ -94,49 +90,15 @@ def main_color(frame):
         else:
             resize_name = input_image
 
-            img_url = resize_name
-            colors_x = extcolors.extract_from_path(img_url, tolerance = tolerance, limit = 13)
-            df_color = color_to_df(colors_x)
-                            
-            list_color = list(df_color['c_code'])
-            list_precent = [int(i) for i in list(df_color['occurence'])]
-            text_c = [c + ' ' + str(round(p*100/sum(list_precent),1)) +'%' for c, p in zip(list_color, list_precent)]
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(160,120), dpi = 10)
-                            
-            wedges, text = ax1.pie(list_precent,
-                                    labels= text_c,
-                                    labeldistance= 1.05,
-                                    colors = list_color,
-                                    textprops={'fontsize': 150, 'color':'black'})
-            plt.setp(wedges, width=0.3)
-
-            img = mpimg.imread(resize_name)
-            imagebox = OffsetImage(img, zoom=zoom)
-            ab = AnnotationBbox(imagebox, (0, 0))
-            ax1.add_artist(ab)
-                            
-            x_posi, y_posi, y_posi2 = 160, -170, -170
-            for c in list_color:
-                if list_color.index(c) <= 5:
-                    y_posi += 180
-                    rect = patches.Rectangle((x_posi, y_posi), 360, 160, facecolor = c)
-                    ax2.add_patch(rect) 
-                    ax2.text(x = x_posi+400, y = y_posi+100, s = c, fontdict={'fontsize': 190})
-                else:
-                    y_posi2 += 180
-                    rect = patches.Rectangle((x_posi + 1000, y_posi2), 360, 160, facecolor = c)
-                    ax2.add_artist(rect)
-                    ax2.text(x = x_posi+1400, y = y_posi2+100, s = c, fontdict={'fontsize': 190})
-
-            fig.set_facecolor('white')
-            ax2.axis('off')
-            bg = plt.imread('bg.png')
-            plt.imshow(bg)       
-            plt.tight_layout()
-            return plt.show()
+        img_url = resize_name
+        colors_x = extcolors.extract_from_path(img_url, tolerance = tolerance, limit = limit)
+        df_color = rgb_to_hex(colors_x)
 
 
-    def color_to_df(input):
+    def rgb_to_hex(input):
+        global COLOR
+        global OCCURENCE_RATE
+
         colors_pre_list = str(input).replace('([(','').split(', (')[0:-1]
         df_rgb = [i.split('), ')[0] + ')' for i in colors_pre_list]
         df_percent = [i.split('), ')[1].replace(')','') for i in colors_pre_list]
@@ -145,12 +107,12 @@ def main_color(frame):
                             int(i.split(", ")[1]),
                             int(i.split(", ")[2].replace(")",""))) for i in df_rgb]
                             
-        df = pd.DataFrame(zip(df_color_up, df_percent), columns = ['c_code','occurence'])
-        return df
+        COLOR.extend(df_color_up)
+        OCCURENCE_RATE.extend(df_percent) #needs more attention!!!
 
-    df_color = color_to_df(colors_x)
+    df_color = rgb_to_hex(colors_x)
     df_color
-    exact_color(input_name, 400, 5, 4.5)
+    exact_color(input_name, 400, 5 , 20)
 
 if __name__ == "__main__":
     video_file = "zoo.mp4"
@@ -161,3 +123,5 @@ if __name__ == "__main__":
     os.chdir(path) # magic!
     for frame in files:
         main_color(frame)
+        COLOR = list(set(COLOR))
+    print(COLOR) #for test
