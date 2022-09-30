@@ -1,3 +1,4 @@
+from lib2to3.pgen2.pgen import generate_grammar
 import os
 import sys
 import cv2
@@ -15,6 +16,11 @@ import glob
 
 
 SAVING_FRAMES_PER_SECOND = 2
+# Are you using a global variable to store results?
+# This is horrible. Don't ever use global variables like this.
+# Functions get parameters and return results. That's it.
+# Global variables have their place from time to time. But rarely.
+# And never for something as common as storing results.
 global COLOR
 global OCCURENCE_RATE
 COLOR = []
@@ -30,7 +36,11 @@ def format_timedelta(td):
     ms = round(ms / 1e4)
     return f"{result}.{ms:02}".replace(":", "-")
 
-
+# I don't understand the name. Gramatically 'get saving frames' doesn't make sense.
+# Maybe get_saved_frames_durations.
+# But why does this function need to know that the frames are being saved?
+# It's none of its business how the frames are used or how the durations are used.
+# It gets a clip and creates a list of durations.
 def get_saving_frames_durations(cap, saving_fps):
     s = []
     clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
@@ -38,9 +48,10 @@ def get_saving_frames_durations(cap, saving_fps):
         s.append(i)
     return s
 
+# Same complaint regarding the name as for main_color.
 
 def main_frame(video_file):
-    filename, _ = os.path.splitext(video_file) 
+    filename, _ = os.path.splitext(video_file)
     filename += "_frames"
     if not os.path.isdir(filename):
         os.mkdir(filename) 
@@ -67,6 +78,10 @@ def main_frame(video_file):
                 pass    
         count += 1
 
+# 'main_color' doesn't describe what the function does
+# the function extracts colors from a frame
+# however it ca nbe used for any image, not just a frame, it just happens to be a frame in our program
+# a better name would be something like 'def extract_color_palette(image):'
 def main_color(frame):
     input_name = frame
     output_width = 900                   
@@ -78,6 +93,13 @@ def main_color(frame):
     colors_x = extcolors.extract_from_path(img_url, tolerance = 12, limit = 12)
     colors_x
                     
+    # Why the hell are there two function declarations in the middle of the main code?
+    # The code for main_color is just interrupted halfway by some function declarations.
+    # So if I'm reading the code to see what main_frame does, I have to stop halfway through,
+    # remember where I was, skip the function declarations then continue.
+
+    # Gramatical error, you meant extract_color.
+    # And if you extract more than one color, it's extract_colors.
     def exact_color(input_image, resize, tolerance,limit):                
         output_width = resize
         img = Image.open(input_image)
@@ -116,12 +138,47 @@ def main_color(frame):
 
 if __name__ == "__main__":
     video_file = "zoo.mp4"
+    # How does main_frame know where to store the frames?
+    # Oh, there's an implicit convention that it generates them in a folder.
+    # So both __main__ and main_frame need to know to do path, _ = os.path.splitext(video_file)
+    # in order to get the path where the frames are.
+    # So here's the story so far:
+
+    # Hi, I'm main_frame. I get a video file and I generate frames. I decide where the frames are put.
+    # I don't tell anyone where I put the frames. And I'm not directly told how many frames to generate
+    # or how many frames per second to generate or anything like that. Screw you, read my code
+    # if you want to find out.
     main_frame(video_file)
+
+    # Hi, I'm __main__. I also know where the frames are put.
+    # Not because main_frame told me, but because I know the same thing as main_frame.
+    # So we both have to know the same thing and if one of us changes his mind, the author needs to
+    # remember to update the other one.
+    # Also, I assume that all the files in the folder will be images. Nobody told me this,
+    # I just assume it.
     path, _ = os.path.splitext(video_file)
     path += "_frames"
     files = os.listdir(path)
     os.chdir(path) # magic!
+
     for frame in files:
+        # Hi. I'm main_color. I get the name of the frame and I don't return anything.
+        # If you want to find out what my result is, you have to read every line of my code.
         main_color(frame)
         COLOR = list(set(COLOR))
+
     print(COLOR) #for test
+
+    # Here's a better story:
+
+    # Hi, I generate frames from a video.
+    # I am told what video it is, how many frames to generate and where to put the frames.
+    # I return absolute paths to the files I just generated, so that the one calling me knows
+    # exactly what files were generated. And I'm the only one who decides what the files are called.
+    # frames = generate_frames(video, fps, dir_frames)
+
+    # Hi, I extract colors from a set of images. I just need to know the paths to the images and I'll
+    # tell you what the colors are in those images. Neat!
+    # colors = extract_colors_from_images(frames)
+
+    # print(colors)
