@@ -1,18 +1,18 @@
-from lib2to3.pgen2.pgen import generate_grammar
+# from lib2to3.pgen2.pgen import generate_grammar 
 import os
-import sys
+# import sys
 import cv2
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import matplotlib.image as mpimg
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# import matplotlib.patches as patches
+# import matplotlib.image as mpimg
+# from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import extcolors
 from colormap import rgb2hex
 from PIL import Image
 from datetime import timedelta
-import glob
+# import glob
 
 
 SAVING_FRAMES_PER_SECOND = 2
@@ -36,21 +36,17 @@ def format_timedelta(td):
     ms = round(ms / 1e4)
     return f"{result}.{ms:02}".replace(":", "-")
 
-# I don't understand the name. Gramatically 'get saving frames' doesn't make sense.
-# Maybe get_saved_frames_durations.
 # But why does this function need to know that the frames are being saved?
 # It's none of its business how the frames are used or how the durations are used.
 # It gets a clip and creates a list of durations.
-def get_saving_frames_durations(cap, saving_fps):
+def get_saved_frames_durations(cap, saving_fps):
     s = []
     clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     for i in np.arange(0, clip_duration, 1 / saving_fps):
         s.append(i)
     return s
 
-# Same complaint regarding the name as for main_color.
-
-def main_frame(video_file):
+def frame_extractor(video_file):
     filename, _ = os.path.splitext(video_file)
     filename += "_frames"
     if not os.path.isdir(filename):
@@ -58,7 +54,7 @@ def main_frame(video_file):
     cap = cv2.VideoCapture(video_file)
     fps = cap.get(cv2.CAP_PROP_FPS)
     saving_frames_per_second = min(fps, SAVING_FRAMES_PER_SECOND)
-    saving_frames_durations = get_saving_frames_durations(cap, saving_frames_per_second)
+    saving_frames_durations = get_saved_frames_durations(cap, saving_frames_per_second)
     count = 0
     while True:
         is_read, frame = cap.read()
@@ -78,12 +74,9 @@ def main_frame(video_file):
                 pass    
         count += 1
 
-# 'main_color' doesn't describe what the function does
-# the function extracts colors from a frame
-# however it ca nbe used for any image, not just a frame, it just happens to be a frame in our program
-# a better name would be something like 'def extract_color_palette(image):'
-def main_color(frame):
-    input_name = frame
+
+def color_extractor(image):
+    input_name = image
     output_width = 900                   
     img = Image.open(input_name)
     wpercent = (output_width/float(img.size[0]))
@@ -92,49 +85,43 @@ def main_color(frame):
     img_url = input_name
     colors_x = extcolors.extract_from_path(img_url, tolerance = 12, limit = 12)
     colors_x
-                    
-    # Why the hell are there two function declarations in the middle of the main code?
-    # The code for main_color is just interrupted halfway by some function declarations.
-    # So if I'm reading the code to see what main_frame does, I have to stop halfway through,
-    # remember where I was, skip the function declarations then continue.
-
-    # Gramatical error, you meant extract_color.
-    # And if you extract more than one color, it's extract_colors.
-    def exact_color(input_image, resize, tolerance,limit):                
-        output_width = resize
-        img = Image.open(input_image)
-        if img.size[0] >= resize:
-            wpercent = (output_width/float(img.size[0]))
-            hsize = int((float(img.size[1])*float(wpercent)))
-            img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)
-            resize_name = 'resize_'+ input_image
-            img.save(resize_name)
-        else:
-            resize_name = input_image
-
-        img_url = resize_name
-        colors_x = extcolors.extract_from_path(img_url, tolerance = tolerance, limit = limit)
-        df_color = rgb_to_hex(colors_x)
-
-
-    def rgb_to_hex(input):
-        global COLOR
-        global OCCURENCE_RATE
-
-        colors_pre_list = str(input).replace('([(','').split(', (')[0:-1]
-        df_rgb = [i.split('), ')[0] + ')' for i in colors_pre_list]
-        df_percent = [i.split('), ')[1].replace(')','') for i in colors_pre_list]
-                            
-        df_color_up = [rgb2hex(int(i.split(", ")[0].replace("(","")),
-                            int(i.split(", ")[1]),
-                            int(i.split(", ")[2].replace(")",""))) for i in df_rgb]
-                            
-        COLOR.extend(df_color_up)
-        OCCURENCE_RATE.extend(df_percent) #needs more attention!!!
-
+    
     df_color = rgb_to_hex(colors_x)
     df_color
-    exact_color(input_name, 400, 5 , 20)
+    extract_colors(input_name, 400, 5 , 20)
+
+def extract_colors(input_image, resize, tolerance,limit):                
+    output_width = resize
+    img = Image.open(input_image)
+    if img.size[0] >= resize:
+        wpercent = (output_width/float(img.size[0]))
+        hsize = int((float(img.size[1])*float(wpercent)))
+        img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)
+        resize_name = 'resize_'+ input_image
+        img.save(resize_name)
+    else:
+        resize_name = input_image
+    img_url = resize_name
+    colors_x = extcolors.extract_from_path(img_url, tolerance = tolerance, limit = limit)
+    df_color = rgb_to_hex(colors_x)
+
+
+def rgb_to_hex(input):
+    global COLOR
+    global OCCURENCE_RATE
+
+    colors_pre_list = str(input).replace('([(','').split(', (')[0:-1]
+    df_rgb = [i.split('), ')[0] + ')' for i in colors_pre_list]
+    df_percent = [i.split('), ')[1].replace(')','') for i in colors_pre_list]
+                            
+    df_color_up = [rgb2hex(int(i.split(", ")[0].replace("(","")),
+                        int(i.split(", ")[1]),
+                        int(i.split(", ")[2].replace(")",""))) for i in df_rgb]
+                        
+    COLOR.extend(df_color_up)
+    OCCURENCE_RATE.extend(df_percent) #needs more attention!!!
+
+
 
 if __name__ == "__main__":
     video_file = "zoo.mp4"
@@ -148,7 +135,7 @@ if __name__ == "__main__":
     # I don't tell anyone where I put the frames. And I'm not directly told how many frames to generate
     # or how many frames per second to generate or anything like that. Screw you, read my code
     # if you want to find out.
-    main_frame(video_file)
+    frame_extractor(video_file)
 
     # Hi, I'm __main__. I also know where the frames are put.
     # Not because main_frame told me, but because I know the same thing as main_frame.
@@ -161,10 +148,10 @@ if __name__ == "__main__":
     files = os.listdir(path)
     os.chdir(path) # magic!
 
-    for frame in files:
+    for image in files:
         # Hi. I'm main_color. I get the name of the frame and I don't return anything.
         # If you want to find out what my result is, you have to read every line of my code.
-        main_color(frame)
+        extract_colors(image)
         COLOR = list(set(COLOR))
 
     print(COLOR) #for test
@@ -176,9 +163,9 @@ if __name__ == "__main__":
     # I return absolute paths to the files I just generated, so that the one calling me knows
     # exactly what files were generated. And I'm the only one who decides what the files are called.
     # frames = generate_frames(video, fps, dir_frames)
-
+       
     # Hi, I extract colors from a set of images. I just need to know the paths to the images and I'll
     # tell you what the colors are in those images. Neat!
     # colors = extract_colors_from_images(frames)
 
-    # print(colors)
+    # print(colors) 
