@@ -1,11 +1,12 @@
 import os
 import cv2
 import numpy as np
-import extcolors
 from colormap import rgb2hex
 from PIL import Image
 from datetime import timedelta
 import pdb
+import collections
+from PIL import Image, ImageDraw
 
 
 SAVING_FRAMES_PER_SECOND = 2
@@ -14,6 +15,7 @@ global COLOR
 global OCCURENCE_RATE
 COLOR = []
 OCCURENCE_RATE = []
+
 
 def format_timedelta(td):
     result = str(td)
@@ -69,15 +71,9 @@ def color_extractor(image):
     wpercent = (output_width/float(img.size[0]))
     hsize = int((float(img.size[1])*float(wpercent)))
     img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
-    img_url = input_name
-    colors_x = extcolors.extract_from_path(img_url)
-    colors_x
-    
-    df_color = rgb_to_hex(colors_x)
-    df_color
     extract_colors(input_name, 400, 5 , 20)
 
-def extract_colors(input_image, resize):                
+def extract_colors(input_image, resize):           
     output_width = resize
     img = Image.open(input_image)
     if img.size[0] >= resize:
@@ -89,26 +85,76 @@ def extract_colors(input_image, resize):
     else:
         resize_name = input_image
     img_url = resize_name
-    colors_x = extcolors.extract_from_path(img_url)
-    df_color = rgb_to_hex(colors_x)
+    colors_x = extract_from_path(img_url)
+    return colors_x
 
 
-def rgb_to_hex(input):
-    global COLOR
-    global OCCURENCE_RATE
 
-    colors_pre_list = str(input).replace('([(','').split(', (')[0:-1]
-    df_rgb = [i.split('), ')[0] + ')' for i in colors_pre_list]
-    df_percent = [i.split('), ')[1].replace(')','') for i in colors_pre_list]
-                            
-    df_color_up = [rgb2hex(int(i.split(", ")[0].replace("(","")),
-                        int(i.split(", ")[1]),
-                        int(i.split(", ")[2].replace(")",""))) for i in df_rgb]
-                        
-    COLOR.extend(df_color_up)
-    OCCURENCE_RATE.extend(df_percent)
+class Color:
+    def __init__(self, rgb=None, count=0):
+        self.rgb = rgb
+        self.count = count
 
 
+    def __lt__(self, other):
+        return self.count < other.count
+
+
+def extract_from_image(img, limit=None):
+    pixels = _load(img)
+    pixel_count = len(pixels)
+    pixels = _filter_fully_transparent(pixels)
+    pixels = _strip_alpha(pixels)
+    colors = _count_colors(pixels)
+
+    if limit:
+        limit = min(int(limit), len(colors))
+        colors = colors[:limit]
+
+    colors = [(color.rgb, color.count) for color in colors]
+
+    return colors, pixel_count
+
+
+def extract_from_path(path):
+    img = Image.open(path)
+    return extract_from_image(img)
+
+
+def _load(img):
+    img = img.convert("RGBA")
+    return list(img.getdata())
+
+
+def _filter_fully_transparent(pixels):
+    return [p for p in pixels if p[3] > 0]
+
+
+def _strip_alpha(pixels):
+    return [(p[0], p[1], p[2]) for p in pixels]
+
+
+def _count_colors(pixels):
+    counter = collections.defaultdict(int)
+    for color in pixels:
+        counter[color] += 1
+    colors = []
+    for rgb, count in counter.items():
+        colors.append(Color(rgb=rgb,  count=count))
+
+    return colors
+
+def dict_hex(input):
+
+    hex_dict ={}
+    for rgb, count in colors_x.items():
+    hex = rgb2hex(colors_x)
+    hex_dict[hex] = count
+
+def rgb2hex(input):
+    for i in colors_x:
+    hex = '#%02x%02x%02x' % i
+    i =+ 1
 
 if __name__ == "__main__":
     video_file = "zoo.mp4"
@@ -119,13 +165,12 @@ if __name__ == "__main__":
     files = os.listdir(path)
     os.chdir(path)
     resize = 900
-    tolerance = 0
-    limit = 10
     for image in files:
 
         extract_colors(image, resize)
         COLOR = list(set(COLOR))
         OCCURENCE_RATE = list(set(OCCURENCE_RATE))
+    dict_hex(colors_x)
 
     print(COLOR)
     print(OCCURENCE_RATE)
