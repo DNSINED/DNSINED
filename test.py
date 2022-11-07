@@ -1,298 +1,131 @@
-
-# import sys
-# import random
-# from PyQt6 import QtCore, QtWidgets, QtGui
-
-# class MyWidget(QtWidgets.QWidget):
-#        def __init__(self):
-#               super().__init__()
-#               self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
-#               self.button = QtWidgets.QPushButton("Click me!")
-#               self.text = QtWidgets.QLabel("Hello World!", alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-#               self.layout = QtWidgets.QVBoxLayout(self)
-#               self.layout.addWidget(self.text)
-#               self.layout.addWidget(self.button)
-#               self.button.clicked.connect(self.magic)
-#        @QtCore.pyqtSlot()
-#        def magic(self):
-#               self.text.setText(random.choice(self.hello))
-
-# if __name__ == "__main__":
-#        app = QtWidgets.QApplication([])
-
-#        widget = MyWidget()
-#        widget.resize(1000, 400)
-#        widget.show()
-
-#        sys.exit(app.exec())       
-# import sys
-# from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
-
-
-# # class MainWindow(QMainWindow):
-# #     def __init__(self):
-# #         super().__init__()
-
-# #         self.setWindowTitle("My App")
-
-# #         button = QPushButton("Press Me!")
-# #         button.setCheckable(True)
-# #         button.clicked.connect(self.the_button_was_clicked)
-
-# #         # Set the central widget of the Window.
-# #         self.setCentralWidget(button)
-
-# #     def the_button_was_clicked(self):
-# #         print("Clicked!")
-# # class MainWindow(QMainWindow):
-# #     def __init__(self):
-# #         super().__init__()
-
-# #         self.setWindowTitle("My App")
-
-# #         button = QPushButton("Press Me!")
-# #         button.setCheckable(True)
-# #         button.clicked.connect(self.the_button_was_clicked)
-# #         button.clicked.connect(self.the_button_was_toggled)
-
-# #         self.setCentralWidget(button)
-
-# #     def the_button_was_clicked(self):
-# #         print("Clicked!")
-
-# #     def the_button_was_toggled(self, checked):
-# #         print("Checked?", checked)
-
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-
-#         self.setWindowTitle("My App")
-
-#         self.button = QPushButton("Press Me!")
-#         self.button.clicked.connect(self.the_button_was_clicked)
-
-#         self.setCentralWidget(self.button)
-
-#     def the_button_was_clicked(self):
-#         self.button.setText("You already clicked me.")
-#         self.button.setEnabled(False)
-
-#         # Also change the window title.
-#         self.setWindowTitle("My Oneshot App")
-# app = QApplication(sys.argv)
-
-# window = MainWindow()
-# window.show()
-
-# app.exec()
-# from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
-
-# import sys
-# from random import choice
-
-# window_titles = [
-#     'My App',
-#     'My App',
-#     'Still My App',
-#     'Still My App',
-#     'What on earth',
-#     'What on earth',
-#     'This is surprising',
-#     'This is surprising',
-#     'Something went wrong'
-# ]
-
-
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-
-#         self.n_times_clicked = 0
-
-#         self.setWindowTitle("My App")
-
-#         self.button = QPushButton("Press Me!")
-#         self.button.clicked.connect(self.the_button_was_clicked)
-
-#         self.windowTitleChanged.connect(self.the_window_title_changed)
-
-#         # Set the central widget of the Window.
-#         self.setCentralWidget(self.button)
-
-#     def the_button_was_clicked(self):
-#         print("Clicked.")
-#         new_window_title = choice(window_titles)
-#         print("Setting title:  %s" % new_window_title)
-#         self.setWindowTitle(new_window_title)
-
-#     def the_window_title_changed(self, window_title):
-#         print("Window title changed: %s" % window_title)
-
-#         if window_title == 'Something went wrong':
-#             self.button.setDisabled(True)
-
-
-# app = QApplication(sys.argv)
-
-# window = MainWindow()
-# window.show()
-
-# app.exec()
-# from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QVBoxLayout, QWidget
-
-# import sys
-
-
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-
-#         self.setWindowTitle("My App")
-
-#         self.label = QLabel()
-
-#         self.input = QLineEdit()
-#         self.input.textChanged.connect(self.label.setText)
-
-#         layout = QVBoxLayout()
-#         layout.addWidget(self.input)
-#         layout.addWidget(self.label)
-
-#         container = QWidget()
-#         container.setLayout(layout)
-
-#         # Set the central widget of the Window.
-#         self.setCentralWidget(container)
-
-
-# app = QApplication(sys.argv)
-
-# window = MainWindow()
-# window.show()
-
-# app.exec()
-# import sys
-
-# from PyQt6.QtCore import Qt
-# from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QTextEdit
-
-
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-#         self.label = QLabel("Click in this window")
-#         self.setCentralWidget(self.label)
-
-#     def mouseMoveEvent(self, e):
-#         self.label.setText("mouseMoveEvent")
-
-#     def mousePressEvent(self, e):
-#         self.label.setText("mousePressEvent")
-
-#     def mouseReleaseEvent(self, e):
-#         self.label.setText("mouseReleaseEvent")
-
-#     def mouseDoubleClickEvent(self, e):
-#         self.label.setText("mouseDoubleClickEvent")
-
-
-# app = QApplication(sys.argv)
-
-# window = MainWindow()
-# window.show()
-
-# app.exec()
-
-# import sys 
-# from PyQt6.QtCore import Qt
-# from PyQt6.QtGui import QAction
-# from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QMenu
-
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
+import os
+import cv2
+import numpy as np
+import extcolors
+from colormap import rgb2hex
+from PIL import Image
+from datetime import timedelta
+import pdb
+
+
+SAVING_FRAMES_PER_SECOND = 2
+
+global COLOR
+global OCCURENCE_RATE
+COLOR = []
+OCCURENCE_RATE = []
+
+def format_timedelta(td):
+    result = str(td)
+    try:
+        result, ms = result.split(".")
+    except ValueError:
+        return result + ".00".replace(":", "-")
+    ms = int(ms)
+    ms = round(ms / 1e4)
+    return f"{result}.{ms:02}".replace(":", "-")
+
+
+def get_saved_frames_durations(cap, saving_fps):
+    s = []
+    clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
+    for i in np.arange(0, clip_duration, 1 / saving_fps):
+        s.append(i)
+    return s
+
+def frame_extractor(video_file):
+    filename, _ = os.path.splitext(video_file)
+    filename += "_frames"
+    if not os.path.isdir(filename):
+        os.mkdir(filename) 
+    cap = cv2.VideoCapture(video_file)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    saving_frames_per_second = min(fps, SAVING_FRAMES_PER_SECOND)
+    saving_frames_durations = get_saved_frames_durations(cap, saving_frames_per_second)
+    count = 0
+    while True:
+        is_read, frame = cap.read()
+        if not is_read:
+            break
+        frame_duration = count / fps
+        try:
+            closest_duration = saving_frames_durations[0]
+        except IndexError:
+            break
+        if frame_duration >= closest_duration:
+            frame_duration_formatted = format_timedelta(timedelta(seconds=frame_duration))
+            cv2.imwrite(os.path.join(filename,f"frame{frame_duration_formatted}.jpg"), frame)        
+            try:
+                saving_frames_durations.pop(0)
+            except IndexError:
+                pass    
+        count += 1
+
+
+def color_extractor(image):
+    input_name = image
+    output_width = 900                   
+    img = Image.open(input_name)
+    wpercent = (output_width/float(img.size[0]))
+    hsize = int((float(img.size[1])*float(wpercent)))
+    img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
+    img_url = input_name
+    colors_x = extcolors.extract_from_path(img_url)
+    colors_x
     
-#     def contextMenuEvent(self, e):
-#         context = QMenu(self)
-#         context.addAction(QAction("test 1", self))
-#         context.addAction(QAction("test 2", self))
-#         context.addAction(QAction("test 3", self))
-#         context.addAction(QAction("test 4", self))
-#         context.exec(e.globalPos())
+    df_color = rgb_to_hex(colors_x)
+    df_color
+    extract_colors(input_name, 400, 5 , 20)
 
-# app = QApplication(sys.argv)
-# window = MainWindow()
-# window.show()
-# app.exec()
-
-# import sys
-
-# from PyQt6.QtCore import Qt
-# from PyQt6.QtWidgets import (
-#     QApplication,
-#     QCheckBox,
-#     QComboBox,
-#     QDateEdit,
-#     QDateTimeEdit,
-#     QDial,
-#     QDoubleSpinBox,
-#     QFontComboBox,
-#     QLabel,
-#     QLCDNumber,
-#     QLineEdit,
-#     QMainWindow,
-#     QProgressBar,
-#     QPushButton,
-#     QRadioButton,
-#     QSlider,
-#     QSpinBox,
-#     QTimeEdit,
-#     QVBoxLayout,
-#     QWidget,
-# )
+def extract_colors(input_image, resize):                
+    output_width = resize
+    img = Image.open(input_image)
+    if img.size[0] >= resize:
+        wpercent = (output_width/float(img.size[0]))
+        hsize = int((float(img.size[1])*float(wpercent)))
+        img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)
+        resize_name = 'resize_'+ input_image
+        img.save(resize_name)
+    else:
+        resize_name = input_image
+    img_url = resize_name
+    colors_x = extcolors.extract_from_path(img_url)
+    df_color = rgb_to_hex(colors_x)
 
 
-# # Subclass QMainWindow to customize your application's main window
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
+def rgb_to_hex(input):
+    global COLOR
+    global OCCURENCE_RATE
 
-#         self.setWindowTitle("Widgets App")
-
-#         layout = QVBoxLayout()
-#         widgets = [
-#             QCheckBox,
-#             QComboBox,
-#             QDateEdit,
-#             QDateTimeEdit,
-#             QDial,
-#             QDoubleSpinBox,
-#             QFontComboBox,
-#             QLCDNumber,
-#             QLabel,
-#             QLineEdit,
-#             QProgressBar,
-#             QPushButton,
-#             QRadioButton,
-#             QSlider,
-#             QSpinBox,
-#             QTimeEdit,
-#         ]
-
-#         for w in widgets:
-#             layout.addWidget(w())
-
-#         widget = QWidget()
-#         widget.setLayout(layout)
-
-#         # Set the central widget of the Window. Widget will expand
-#         # to take up all the space in the window by default.
-#         self.setCentralWidget(widget)
+    colors_pre_list = str(input).replace('([(','').split(', (')[0:-1]
+    df_rgb = [i.split('), ')[0] + ')' for i in colors_pre_list]
+    df_percent = [i.split('), ')[1].replace(')','') for i in colors_pre_list]
+                            
+    df_color_up = [rgb2hex(int(i.split(", ")[0].replace("(","")),
+                        int(i.split(", ")[1]),
+                        int(i.split(", ")[2].replace(")",""))) for i in df_rgb]
+                        
+    COLOR.extend(df_color_up)
+    OCCURENCE_RATE.extend(df_percent)
 
 
-# app = QApplication(sys.argv)
-# window = MainWindow()
-# window.show()
 
-# app.exec()
+if __name__ == "__main__":
+    video_file = "zoo.mp4"
+
+    frame_extractor(video_file)
+    path, _ = os.path.splitext(video_file)
+    path += "_frames"
+    files = os.listdir(path)
+    os.chdir(path)
+    resize = 900
+    tolerance = 0
+    limit = 10
+    for image in files:
+
+        extract_colors(image, resize)
+        COLOR = list(set(COLOR))
+        OCCURENCE_RATE = list(set(OCCURENCE_RATE))
+
+    print(COLOR)
+    print(OCCURENCE_RATE)

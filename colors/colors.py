@@ -1,18 +1,11 @@
-# from lib2to3.pgen2.pgen import generate_grammar 
 import os
-# import sys
 import cv2
 import numpy as np
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import matplotlib.patches as patches
-# import matplotlib.image as mpimg
-# from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import extcolors
 from colormap import rgb2hex
 from PIL import Image
 from datetime import timedelta
-# import glob
+import pdb
 
 
 SAVING_FRAMES_PER_SECOND = 2
@@ -147,11 +140,13 @@ if __name__ == "__main__":
     path += "_frames"
     files = os.listdir(path)
     os.chdir(path) # magic!
-
+    resize = 900
+    tolerance = 0
+    limit = 100
     for image in files:
         # Hi. I'm main_color. I get the name of the frame and I don't return anything.
         # If you want to find out what my result is, you have to read every line of my code.
-        extract_colors(image)
+        extract_colors(image, resize, tolerance,limit)
         COLOR = list(set(COLOR))
 
     print(COLOR) #for test
