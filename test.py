@@ -73,7 +73,8 @@ def color_extractor(image):
     img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
     extract_colors(input_name, 400)
 
-def extract_colors(input_image, resize):           
+def extract_colors(input_image, resize):
+    global colors_x           
     output_width = resize
     img = Image.open(input_image)
     if img.size[0] >= resize:
@@ -99,7 +100,7 @@ def extract_colors(input_image, resize):
 #         return self.count < other.count
 
 
-def extract_from_image(img, limit=None):
+def extract_from_image(img): #,limit):
     pixels = _load(img)
     pixel_count = len(pixels)
     pixels = _filter_fully_transparent(pixels)
@@ -140,8 +141,7 @@ def _count_colors(pixels):
 #     colors = []
 #     for rgb, count in counter.items():
 #         colors.append(Color(rgb=rgb,  count=count))
-    color = counter
-    return color
+    return counter
 
 def dict_hex(input):
     hex_dict ={}
