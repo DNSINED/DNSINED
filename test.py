@@ -71,7 +71,7 @@ def color_extractor(image):
     wpercent = (output_width/float(img.size[0]))
     hsize = int((float(img.size[1])*float(wpercent)))
     img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
-    extract_colors(input_name, 400, 5 , 20)
+    extract_colors(input_name, 400)
 
 def extract_colors(input_image, resize):           
     output_width = resize
@@ -86,18 +86,17 @@ def extract_colors(input_image, resize):
         resize_name = input_image
     img_url = resize_name
     colors_x = extract_from_path(img_url)
-    return colors_x
+    
 
 
 
-class Color:
-    def __init__(self, rgb=None, count=0):
-        self.rgb = rgb
-        self.count = count
+# class Color:
+#     def __init__(self, rgb=None, count=0):
+#         self.rgb = rgb
+#         self.count = count
 
-
-    def __lt__(self, other):
-        return self.count < other.count
+#     def __lt__(self, other):
+#         return self.count < other.count
 
 
 def extract_from_image(img, limit=None):
@@ -105,15 +104,15 @@ def extract_from_image(img, limit=None):
     pixel_count = len(pixels)
     pixels = _filter_fully_transparent(pixels)
     pixels = _strip_alpha(pixels)
-    colors = _count_colors(pixels)
+    colors_x = _count_colors(pixels)
 
-    if limit:
-        limit = min(int(limit), len(colors))
-        colors = colors[:limit]
+#     if limit:
+#         limit = min(int(limit), len(colors))
+#         colors = colors[:limit]
 
-    colors = [(color.rgb, color.count) for color in colors]
+#     colors = [(color.rgb, color.count) for color in colors]
 
-    return colors, pixel_count
+    return colors_x, pixel_count
 
 
 def extract_from_path(path):
@@ -138,23 +137,19 @@ def _count_colors(pixels):
     counter = collections.defaultdict(int)
     for color in pixels:
         counter[color] += 1
-    colors = []
-    for rgb, count in counter.items():
-        colors.append(Color(rgb=rgb,  count=count))
-
-    return colors
+#     colors = []
+#     for rgb, count in counter.items():
+#         colors.append(Color(rgb=rgb,  count=count))
+    color = counter
+    return color
 
 def dict_hex(input):
-
     hex_dict ={}
-    for rgb, count in colors_x.items():
-    hex = rgb2hex(colors_x)
-    hex_dict[hex] = count
+    for rgb, count in input.items():
+       hex = '#%02x%02x%02x' % rgb
+       hex_dict[hex] = count
+    print(hex_dict)
 
-def rgb2hex(input):
-    for i in colors_x:
-    hex = '#%02x%02x%02x' % i
-    i =+ 1
 
 if __name__ == "__main__":
     video_file = "zoo.mp4"
@@ -166,11 +161,8 @@ if __name__ == "__main__":
     os.chdir(path)
     resize = 900
     for image in files:
-
         extract_colors(image, resize)
         COLOR = list(set(COLOR))
         OCCURENCE_RATE = list(set(OCCURENCE_RATE))
-    dict_hex(colors_x)
 
-    print(COLOR)
-    print(OCCURENCE_RATE)
+    dict_hex(colors_x)
