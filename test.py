@@ -58,55 +58,18 @@ def frame_extractor(video_file):
         count += 1
 
 
-def color_extractor(image):
-    input_name = image
-    output_width = 900                   
-    img = Image.open(input_name)
-    wpercent = (output_width/float(img.size[0]))
-    hsize = int((float(img.size[1])*float(wpercent)))
-    img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
-    extract_colors(input_name, 400)
-
-
-def extract_colors(input_image, resize):         
-    output_width = resize
-    img = Image.open(input_image)
-    if img.size[0] >= resize:
-        wpercent = (output_width/float(img.size[0]))
-        hsize = int((float(img.size[1])*float(wpercent)))
-        img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)
-        resize_name = 'resize_'+ input_image
-        img.save(resize_name)
-    else:
-        resize_name = input_image
-    img_url = resize_name
-    colors_x = extract_from_path(img_url)
+def color_extractor(image):         
+    colors_x = extract_from_image(image)
     return colors_x
 
 
 def extract_from_image(img):
-    pixels = _load(img)
-    colors = _count_colors(pixels)
-
-    return colors
-   
-
-
-def extract_from_path(path):
     img = Image.open(path)
-    return extract_from_image(img)
-
-
-def _load(img):
     img = img.convert("RGB")
-    return list(img.getdata())
-
-
-def _count_colors(pixels):
     counter = collections.defaultdict(int)
-    for color in pixels:
+    for color in img:
         counter[color] += 1
-    return counter
+    return counter    
 
 
 def rgb_2_hex(input):
@@ -118,7 +81,7 @@ def rgb_2_hex(input):
 
 
 if __name__ == "__main__":
-    video_file = "zoo.mp4"
+    video_file = "adventure_time.mkv"
 
     frame_extractor(video_file)
     path, _ = os.path.splitext(video_file)
@@ -126,15 +89,11 @@ if __name__ == "__main__":
     files = os.listdir(path)
     os.chdir(path)
     resize = 900
-    all_colors = {}
+    all_colors = collections.defaultdict(int)
     for image in files:
-       colors = extract_colors(image, resize)
-    for x in list(colors.keys()):
-       if x in all_colors.keys():
-          all_colors[x] = all_colors[x] + colors[x]
-          del colors[x]
-    all_colors.update(colors)
-    colors.clear()
+       colors = color_extractor(image)
+       for col in colors:
+        all_colors[col] += colors[col]
 
     hex_dict = rgb_2_hex(all_colors)
     with open('colors.csv', 'w') as f:
