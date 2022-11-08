@@ -7,7 +7,7 @@ import collections
 from PIL import Image
 
 
-SAVING_FRAMES_PER_SECOND = 2
+SAVING_FRAMES_PER_SECOND = 10
 
 
 def format_timedelta(td):
@@ -68,8 +68,7 @@ def color_extractor(image):
     extract_colors(input_name, 400)
 
 
-def extract_colors(input_image, resize):
-    global colors_x, pixels_x           
+def extract_colors(input_image, resize):         
     output_width = resize
     img = Image.open(input_image)
     if img.size[0] >= resize:
@@ -81,18 +80,17 @@ def extract_colors(input_image, resize):
     else:
         resize_name = input_image
     img_url = resize_name
-    colors_x, pixels_x = extract_from_path(img_url)
-    
+    colors_x = extract_from_path(img_url)
+    return colors_x
 
-def extract_from_image(img): #,limit):
+
+def extract_from_image(img):
     pixels = _load(img)
-    pixel_count = len(pixels)
-    pixels = _filter_fully_transparent(pixels)
-    pixels = _strip_alpha(pixels)
     colors = _count_colors(pixels)
 
-    return colors, pixel_count
+    return colors
    
+
 
 def extract_from_path(path):
     img = Image.open(path)
@@ -100,16 +98,8 @@ def extract_from_path(path):
 
 
 def _load(img):
-    img = img.convert("RGBA")
+    img = img.convert("RGB")
     return list(img.getdata())
-
-
-def _filter_fully_transparent(pixels):
-    return [p for p in pixels if p[3] > 0]
-
-
-def _strip_alpha(pixels):
-    return [(p[0], p[1], p[2]) for p in pixels]
 
 
 def _count_colors(pixels):
@@ -119,27 +109,34 @@ def _count_colors(pixels):
     return counter
 
 
-def dict_hex(rgb_dict):
-    global hex_dict
+def rgb_2_hex(input):
     hex_dict ={}
-    for rgb, count in rgb_dict.items():
-       hex = '#%02x%02x%02x' % rgb
-       hex_dict[hex] = count
+    for rgb, count in input.items():
+        hex = '#%02x%02x%02x' % rgb
+        hex_dict[hex] = count
     return hex_dict
 
 
 if __name__ == "__main__":
-    video_file = "rick&morty.jpg"
+    video_file = "zoo.mp4"
+
     frame_extractor(video_file)
     path, _ = os.path.splitext(video_file)
     path += "_frames"
     files = os.listdir(path)
     os.chdir(path)
     resize = 900
+    all_colors = {}
     for image in files:
-        extract_colors(image, resize)
+       colors = extract_colors(image, resize)
+    for x in list(colors.keys()):
+       if x in all_colors.keys():
+          all_colors[x] = all_colors[x] + colors[x]
+          del colors[x]
+    all_colors.update(colors)
+    colors.clear()
 
-    dict_hex(colors_x)
+    hex_dict = rgb_2_hex(all_colors)
     with open('colors.csv', 'w') as f:
-        for key in hex_dict.keys():
-             f.write("%s,%s\n"%(key,hex_dict[key]))
+       for key in hex_dict.keys():
+           f.write("%s,%s\n"%(key,hex_dict[key]))
