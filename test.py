@@ -1,21 +1,13 @@
 import os
-import csv
 import cv2
 import numpy as np
-from colormap import rgb2hex
 from PIL import Image
 from datetime import timedelta
-import pdb
 import collections
-from PIL import Image, ImageDraw
+from PIL import Image
 
 
 SAVING_FRAMES_PER_SECOND = 2
-
-global COLOR
-global OCCURENCE_RATE
-COLOR = []
-OCCURENCE_RATE = []
 
 
 def format_timedelta(td):
@@ -35,6 +27,7 @@ def get_saved_frames_durations(cap, saving_fps):
     for i in np.arange(0, clip_duration, 1 / saving_fps):
         s.append(i)
     return s
+
 
 def frame_extractor(video_file):
     filename, _ = os.path.splitext(video_file)
@@ -74,6 +67,7 @@ def color_extractor(image):
     img = img.resize((output_width,hsize), Image.Resampling.LANCZOS)                 
     extract_colors(input_name, 400)
 
+
 def extract_colors(input_image, resize):
     global colors_x, pixels_x           
     output_width = resize
@@ -90,17 +84,6 @@ def extract_colors(input_image, resize):
     colors_x, pixels_x = extract_from_path(img_url)
     
 
-
-
-# class Color:
-#     def __init__(self, rgb=None, count=0):
-#         self.rgb = rgb
-#         self.count = count
-
-#     def __lt__(self, other):
-#         return self.count < other.count
-
-
 def extract_from_image(img): #,limit):
     pixels = _load(img)
     pixel_count = len(pixels)
@@ -108,14 +91,8 @@ def extract_from_image(img): #,limit):
     pixels = _strip_alpha(pixels)
     colors = _count_colors(pixels)
 
-#     if limit:
-#         limit = min(int(limit), len(colors))
-#         colors = colors[:limit]
-
-#     colors = [(color.rgb, color.count) for color in colors]
-
     return colors, pixel_count
-
+   
 
 def extract_from_path(path):
     img = Image.open(path)
@@ -139,23 +116,20 @@ def _count_colors(pixels):
     counter = collections.defaultdict(int)
     for color in pixels:
         counter[color] += 1
-#     colors = []
-#     for rgb, count in counter.items():
-#         colors.append(Color(rgb=rgb,  count=count))
     return counter
 
-def dict_hex(input):
+
+def dict_hex(rgb_dict):
     global hex_dict
     hex_dict ={}
-    for rgb, count in input.items():
+    for rgb, count in rgb_dict.items():
        hex = '#%02x%02x%02x' % rgb
        hex_dict[hex] = count
     return hex_dict
 
 
 if __name__ == "__main__":
-    video_file = "zoo.mp4"
-
+    video_file = "rick&morty.jpg"
     frame_extractor(video_file)
     path, _ = os.path.splitext(video_file)
     path += "_frames"
@@ -164,10 +138,8 @@ if __name__ == "__main__":
     resize = 900
     for image in files:
         extract_colors(image, resize)
-        COLOR = list(set(COLOR))
-        OCCURENCE_RATE = list(set(OCCURENCE_RATE))
 
     dict_hex(colors_x)
     with open('colors.csv', 'w') as f:
-       for key in hex_dict.keys():
-           f.write("%s,%s\n"%(key,hex_dict[key]))
+        for key in hex_dict.keys():
+             f.write("%s,%s\n"%(key,hex_dict[key]))
