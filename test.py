@@ -1,4 +1,5 @@
 import os
+import csv
 import cv2
 import numpy as np
 from colormap import rgb2hex
@@ -74,7 +75,7 @@ def color_extractor(image):
     extract_colors(input_name, 400)
 
 def extract_colors(input_image, resize):
-    global colors_x           
+    global colors_x, pixels_x           
     output_width = resize
     img = Image.open(input_image)
     if img.size[0] >= resize:
@@ -86,7 +87,7 @@ def extract_colors(input_image, resize):
     else:
         resize_name = input_image
     img_url = resize_name
-    colors_x = extract_from_path(img_url)
+    colors_x, pixels_x = extract_from_path(img_url)
     
 
 
@@ -105,7 +106,7 @@ def extract_from_image(img): #,limit):
     pixel_count = len(pixels)
     pixels = _filter_fully_transparent(pixels)
     pixels = _strip_alpha(pixels)
-    colors_x = _count_colors(pixels)
+    colors = _count_colors(pixels)
 
 #     if limit:
 #         limit = min(int(limit), len(colors))
@@ -113,7 +114,7 @@ def extract_from_image(img): #,limit):
 
 #     colors = [(color.rgb, color.count) for color in colors]
 
-    return colors_x, pixel_count
+    return colors, pixel_count
 
 
 def extract_from_path(path):
@@ -144,11 +145,12 @@ def _count_colors(pixels):
     return counter
 
 def dict_hex(input):
+    global hex_dict
     hex_dict ={}
     for rgb, count in input.items():
        hex = '#%02x%02x%02x' % rgb
        hex_dict[hex] = count
-    print(hex_dict)
+    return hex_dict
 
 
 if __name__ == "__main__":
@@ -166,3 +168,6 @@ if __name__ == "__main__":
         OCCURENCE_RATE = list(set(OCCURENCE_RATE))
 
     dict_hex(colors_x)
+    with open('colors.csv', 'w') as f:
+       for key in hex_dict.keys():
+           f.write("%s,%s\n"%(key,hex_dict[key]))
