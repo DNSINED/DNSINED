@@ -7,6 +7,7 @@ from datetime import timedelta
 import collections
 from PIL import Image
 
+
 st = time.time()
 SAVING_FRAMES_PER_SECOND = 1
 
@@ -26,7 +27,7 @@ def get_saved_frames_durations(cap, saving_fps):
     s = []
     clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / \
         cap.get(cv2.CAP_PROP_FPS)
-    for i in np.arange(0, clip_duration, 1 / saving_fps):
+    for i in np.arange(300 , clip_duration-300, 1 / saving_fps):
         s.append(i)
     return s
 
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     elapsed_time = et - st
     print('Execution time:', elapsed_time, 'seconds')
     
-    frame = ""
-    hex_code = ()
-    change_color(frame, hex_code)
+    # frame = ""
+    # hex_code = ()
+    # change_color(frame, hex_code)
 
