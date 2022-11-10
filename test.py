@@ -90,30 +90,29 @@ def hex_2_rgb(value):
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
 def change_color(frame, hex_code):
-    img_dir, _ = os.path.splitext(img)
-    img_dir += "_image_changed"
+    name = hex_code
     rgb_code = hex_2_rgb(hex_code)
     img = Image.open(frame)
     img = img.convert("RGB")
  
     data_rgb = img.getdata()
- 
     new_image = []
+    
     for item in data_rgb:
-        if item[0] == rgb_code:
+        if item[0] in list(rgb_code):
             new_image.append((255, 0, 0))
         else:
             new_image.append(item)
-         
+    print(new_image)     
     img.putdata(new_image)
    
-    img.save(img_dir + ".jpg")
+    img.save(name + ".jpg")
 
 if __name__ == "__main__":
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
-    #frame_extractor(video_file, frames_dir)
+    frame_extractor(video_file, frames_dir)
     
     files = get_files(frames_dir)
     #files = files[100:130] # for debugging purposes
