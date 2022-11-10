@@ -83,6 +83,31 @@ def get_files(directory):
         full_paths.append(os.path.join(directory, file))
     return full_paths
 
+def hex_2_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+def change_color(frame, hex_code):
+    img_dir, _ = os.path.splitext(img)
+    img_dir += "_image_changed"
+    rgb_code = hex_2_rgb(hex_code)
+    img = Image.open(frame)
+    img = img.convert("RGB")
+ 
+    data_rgb = img.getdata()
+ 
+    new_image = []
+    for item in data_rgb:
+        if item[0] == rgb_code:
+            new_image.append((255, 0, 0))
+        else:
+            new_image.append(item)
+         
+    img.putdata(new_image)
+   
+    img.save(img_dir + ".jpg")
+
 if __name__ == "__main__":
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
@@ -90,7 +115,7 @@ if __name__ == "__main__":
     #frame_extractor(video_file, frames_dir)
     
     files = get_files(frames_dir)
-    files = files[100:130] # for debugging purposes
+    #files = files[100:130] # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
@@ -109,3 +134,8 @@ if __name__ == "__main__":
     et = time.time()
     elapsed_time = et - st
     print('Execution time:', elapsed_time, 'seconds')
+    
+    frame = ""
+    hex_code = ()
+    change_color(frame, hex_code)
+
