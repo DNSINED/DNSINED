@@ -84,6 +84,27 @@ def get_files(directory):
         full_paths.append(os.path.join(directory, file))
     return full_paths
 
+def apply_tolerance(rgb_dict, tl):
+    rgb_list = list(rgb_dict.items())
+    rgb_list.sort(key=lambda x: x[1], reverse=True)
+    aux_list = list(rgb_list)
+    count = 0
+    duplicates = []
+    for codes,occurrence in rgb_list:
+        aux_list.pop(0)
+        for code,occ in aux_list:
+            r = abs(codes[0]-code[0])
+            g = abs(codes[1]-code[1])
+            b = abs(codes[2]-code[2])
+            if r <= tl and g <= tl and b <= tl:
+                occurrence += occ
+                rgb_list[count] = (codes,occurrence)
+                duplicates.append((code,occ))
+        count += 1
+    for code,occ in duplicates:
+        rgb_list.remove((code,occ))
+    return(rgb_list)
+
 def hex_2_rgb(value):
     value = value.lstrip('#')
     lv = len(value)
@@ -105,7 +126,7 @@ def change_color(frame, hex_code):
             new_image.append(item)   
     img.putdata(new_image)
    
-    img.save(name + ".jpg")
+    img.save(name + ".png")
 
 if __name__ == "__main__":
     video_file = "adventure_time.mkv"
@@ -114,15 +135,16 @@ if __name__ == "__main__":
     # frame_extractor(video_file, frames_dir)
     
     files = get_files(frames_dir)
-    files = files[3:10] # for debugging purposes
+    files = files[1:3] # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
         colors = extract_colors(image)
         for col in colors:
             all_colors[col] += colors[col]
-
-    hex_dict = rgb_2_hex(all_colors)
+    tolerance = 10      
+    rgb_list = dict(apply_tolerance(all_colors, tolerance))
+    hex_dict = rgb_2_hex(rgb_list)
     hex_list = list(hex_dict.items())
     hex_list.sort(key=lambda x: x[1], reverse=True)
 
