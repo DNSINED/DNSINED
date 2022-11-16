@@ -90,20 +90,24 @@ def apply_tolerance(rgb_dict, tl):
     aux_list = list(rgb_list)
     count = 0
     duplicates = []
-    for codes,occurrence in rgb_list:
+    for codes, occurrence in rgb_list:
         aux_list.pop(0)
-        for code,occ in aux_list:
+        for code, occ in aux_list:
             r = abs(codes[0]-code[0])
             g = abs(codes[1]-code[1])
             b = abs(codes[2]-code[2])
             if r <= tl and g <= tl and b <= tl:
                 occurrence += occ
-                rgb_list[count] = (codes,occurrence)
-                duplicates.append((code,occ))
+                rgb_list[count] = (codes, occurrence)
+                duplicates.append(code)
+
         count += 1
-    for code,occ in duplicates:
-        rgb_list.remove((code,occ))
-    return(rgb_list)
+    rgb_codes = []
+    for codes,occurrence in rgb_list:
+        if codes not in duplicates:
+            rgb_codes.append((codes, occurrence))
+
+    return(rgb_codes)
 
 def hex_2_rgb(value):
     value = value.lstrip('#')
