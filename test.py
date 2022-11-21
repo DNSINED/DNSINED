@@ -8,7 +8,6 @@ import collections
 from PIL import Image
 
 
-st = time.time()
 SAVING_FRAMES_PER_SECOND = 1
 
 
@@ -22,7 +21,6 @@ def format_timedelta(td):
     ms = round(ms / 1e4)
     return f"{result}.{ms:02}".replace(":", "-")
 
-
 def get_saved_frames_durations(cap, saving_fps):
     s = []
     clip_duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / \
@@ -30,7 +28,6 @@ def get_saved_frames_durations(cap, saving_fps):
     for i in np.arange(300 , clip_duration-300, 1 / saving_fps):
         s.append(i)
     return s
-
 
 def frame_extractor(video_file, frames_dir):
     if not os.path.isdir(frames_dir):
@@ -84,30 +81,29 @@ def get_files(directory):
         full_paths.append(os.path.join(directory, file))
     return full_paths
 
-def apply_tolerance(rgb_dict, tl):
-    rgb_list = list(rgb_dict.items())
+
+def apply_tolerance(rgb_list, tl):
+    rgb_list = list(rgb_list)
     rgb_list.sort(key=lambda x: x[1], reverse=True)
-    aux_list = list(rgb_list)
-    count = 0
-    duplicates = []
-    for codes, occurrence in rgb_list:
-        aux_list.pop(0)
-        for code, occ in aux_list:
+    duplicates = set()
+    for idx, (codes, occurrence) in enumerate(rgb_list):
+        for idx2 in range(idx + 1, len(rgb_list)):
+            code = rgb_list[idx2][0]
+            occ = rgb_list[idx2][1]
             r = abs(codes[0]-code[0])
             g = abs(codes[1]-code[1])
             b = abs(codes[2]-code[2])
             if r <= tl and g <= tl and b <= tl:
                 occurrence += occ
-                rgb_list[count] = (codes, occurrence)
-                duplicates.append(code)
+                rgb_list[idx] = (codes, occurrence)
+                duplicates.add(code)
 
-        count += 1
-    rgb_codes = []
-    for codes,occurrence in rgb_list:
+    rgb = []
+    for codes, occurrence in rgb_list:
         if codes not in duplicates:
-            rgb_codes.append((codes, occurrence))
+            rgb.append((codes, occurrence))
 
-    return(rgb_codes)
+    return(rgb)
 
 def hex_2_rgb(value):
     value = value.lstrip('#')
@@ -132,35 +128,67 @@ def change_color(frame, hex_code):
    
     img.save(name + ".png")
 
+def colors_are_similar(col1, col2, tl):
+    r = abs(col1[0]-col2[0])
+    g = abs(col1[1]-col2[1])
+    b = abs(col1[2]-col2[2])
+    return r <= tl and g <= tl and b <= tl
+
+def apply_tolerance_frame(frame, code_rgb, tl):
+    img = Image.open(frame)
+    img = img.convert("RGB")
+
+    data_rgb = list(img.getdata())
+    new_image = []    
+    for code in data_rgb:
+        if colors_are_similar(code, code_rgb[0], tl):
+            new_image.append((255, 0, 0))
+        else:
+            new_image.append(code) 
+    img.putdata(new_image)    
+    img.save("new_img.png")
+
+def rgb_code(frame, color_list, tl):
+    for col in color_list:
+        apply_tolerance_frame(frame, col, tl)
+
+def frames(frame_list, color_list, tl):
+    for pic in frame_list:
+        rgb_code(pic, color_list, tl)
+
 if __name__ == "__main__":
+    st = time.time()
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
+    tolerance = 10
     # frame_extractor(video_file, frames_dir)
     
     files = get_files(frames_dir)
-    files = files[1:3] # for debugging purposes
+    files = files[0:1] # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
         colors = extract_colors(image)
         for col in colors:
             all_colors[col] += colors[col]
-    tolerance = 10      
-    rgb_list = dict(apply_tolerance(all_colors, tolerance))
-    hex_dict = rgb_2_hex(rgb_list)
-    hex_list = list(hex_dict.items())
-    hex_list.sort(key=lambda x: x[1], reverse=True)
 
-    with open('colors.csv', 'w') as f:
-        for hex in hex_list:
-            f.write("%s,%s\n" % (hex[0], hex[1]))
+    all_colors = list(all_colors.items())
+    all_colors.sort(key=lambda x: x[1], reverse=True)     
+ 
+    # rgb_list = apply_tolerance(all_colors, tolerance)
+    # rgb_list.sort(key=lambda x: x[1], reverse=True)
+    # with open('colors.csv', 'w') as f:
+    #     for rgb in rgb_list:
+    #         f.write("%s,%s\n" % (rgb[0], rgb[1]))
 
-    et = time.time()
-    elapsed_time = et - st
-    print('Execution time:', elapsed_time, 'seconds')
-    
     # frame = ""
     # hex_code = ()
     # change_color(frame, hex_code)
 
+    color_list = all_colors[:10] 
+    frames(files, color_list, tolerance)
+
+    et = time.time()
+    elapsed_time = et - st
+    print('Execution time:', elapsed_time, 'seconds')
