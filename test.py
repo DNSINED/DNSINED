@@ -134,7 +134,7 @@ def colors_are_similar(col1, col2, tl):
     b = abs(col1[2]-col2[2])
     return r <= tl and g <= tl and b <= tl
 
-def apply_tolerance_frame(frame, code_rgb, tl):
+def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
     img = Image.open(frame)
     img = img.convert("RGB")
 
@@ -146,11 +146,11 @@ def apply_tolerance_frame(frame, code_rgb, tl):
         else:
             new_image.append(code) 
     img.putdata(new_image)    
-    img.save("new_img.png")
+    img.save(result_frame)
 
 def rgb_code(frame, color_list, tl):
-    for col in color_list:
-        apply_tolerance_frame(frame, col, tl)
+    for idx,(col) in enumerate(color_list):
+        apply_tolerance_frame(frame,  f'{frame}-{idx}.png', col, tl)
 
 def frames(frame_list, color_list, tl):
     for pic in frame_list:
@@ -158,6 +158,8 @@ def frames(frame_list, color_list, tl):
 
 if __name__ == "__main__":
     st = time.time()
+    new_frames_dir = os.getcwd() + "\\frames_with_tolerance"
+    os.makedirs(new_frames_dir)
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
@@ -186,6 +188,7 @@ if __name__ == "__main__":
     # hex_code = ()
     # change_color(frame, hex_code)
 
+    os.chdir(new_frames_dir)
     color_list = all_colors[:10] 
     frames(files, color_list, tolerance)
 
