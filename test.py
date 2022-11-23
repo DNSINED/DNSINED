@@ -97,10 +97,7 @@ def apply_tolerance(rgb_list, tl):
         for idx2 in range(idx + 1, len(rgb_list)):
             code = rgb_list[idx2][0]
             occ = rgb_list[idx2][1]
-            r = abs(codes[0]-code[0])
-            g = abs(codes[1]-code[1])
-            b = abs(codes[2]-code[2])
-            if r <= tl and g <= tl and b <= tl:
+            if colors_are_similar(codes, code, tl):
                 occurrence += occ
                 rgb_list[idx] = (codes, occurrence)
                 duplicates.add(code)
@@ -138,12 +135,70 @@ def change_color(frame, hex_code):
     img.save(name + ".png")
 
 
+def rgb_2_xyz(value_rgb):
+    R = value_rgb[0]
+    G = value_rgb[1]
+    B = value_rgb[2]
+    var_R = ( R / 255 )
+    var_G = ( G / 255 )
+    var_B = ( B / 255 )
+
+    if ( var_R > 0.04045 ):
+        var_R = ( ( var_R + 0.055 ) / 1.055 ) ** 2.4
+    else:
+        var_R = var_R / 12.92
+    if ( var_G > 0.04045 ):
+        var_G = ( ( var_G + 0.055 ) / 1.055 ) ** 2.4
+    else:                  
+        var_G = var_G / 12.92
+    if ( var_B > 0.04045 ):
+        var_B = ( ( var_B + 0.055 ) / 1.055 ) ** 2.4
+    else:                   
+        var_B = var_B / 12.92
+
+    var_R = var_R * 100
+    var_G = var_G * 100
+    var_B = var_B * 100
+
+    X = var_R * 0.4124 + var_G * 0.3576 + var_B * 0.1805
+    Y = var_R * 0.2126 + var_G * 0.7152 + var_B * 0.0722
+    Z = var_R * 0.0193 + var_G * 0.1192 + var_B * 0.950
+    
+    value_xyz = [X, Y, Z]
+    return(value_xyz)
+def rgb_2_cielab(value_rgb):
+    value_xyz = rgb_2_xyz(value_rgb)
+    var_X = value_xyz[0]
+    var_Y = value_xyz[1]
+    var_Z = value_xyz[2]
+    if ( var_X > 0.008856 ):
+        var_X = var_X ** ( 1/3 )
+    else:                   
+        var_X = ( 7.787 * var_X ) + ( 16 / 116 )
+    if ( var_Y > 0.008856 ):
+        var_Y = var_Y ** ( 1/3 )
+    else:                   
+        var_Y = ( 7.787 * var_Y ) + ( 16 / 116 )
+    if ( var_Z > 0.008856 ):
+        var_Z = var_Z ** ( 1/3 )
+    else:                    
+        var_Z = ( 7.787 * var_Z ) + ( 16 / 116 )
+
+    CIE_L = ( 116 * var_Y ) - 16
+    CIE_a = 500 * ( var_X - var_Y )
+    CIE_b = 200 * ( var_Y - var_Z )
+
+    value_cielab = [CIE_L, CIE_a, CIE_b]
+    return(value_cielab)
+
 def colors_are_similar(col1, col2, tl):
-    r = abs(col1[0]-col2[0])
-    g = abs(col1[1]-col2[1])
+    col1 = rgb_2_cielab(col1)
+    col2 = rgb_2_cielab(col2)
+    L = abs(col1[0]-col2[0])
+    a = abs(col1[1]-col2[1])
     b = abs(col1[2]-col2[2])
-    # return r <= tl and g <= tl and b <= tl
-    return (r + g + b) <= tl
+    return L <= tl and a <= tl and b <= tl
+    # return (r + g + b) <= tl
 
 
 def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
@@ -162,8 +217,9 @@ def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
 
 
 def rgb_code(frame, color_list, tl):
+    frame_changed= f'{frame.removesuffix(".png")}'
     for idx, (col) in enumerate(color_list):
-        apply_tolerance_frame(frame,  f'{frame}-{idx}.png', col, tl)
+        apply_tolerance_frame(frame,  f'{frame_changed}-{idx}.png', col, tl)
 
 
 def make_dir(dir):
@@ -191,11 +247,11 @@ if __name__ == "__main__":
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
-    tolerance = 20
+    tolerance = 16
     # frame_extractor(video_file, frames_dir)
 
     files = get_files(frames_dir)
-    files = files[0:1]  # for debugging purposes
+    files = files[92:93]  # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
