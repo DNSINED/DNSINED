@@ -7,6 +7,7 @@ from datetime import timedelta
 import collections
 from PIL import Image
 import shutil
+import math
 
 
 SAVING_FRAMES_PER_SECOND = 1
@@ -166,6 +167,8 @@ def rgb_2_xyz(value_rgb):
     
     value_xyz = [X, Y, Z]
     return(value_xyz)
+
+
 def rgb_2_cielab(value_rgb):
     value_xyz = rgb_2_xyz(value_rgb)
     var_X = value_xyz[0]
@@ -191,14 +194,49 @@ def rgb_2_cielab(value_rgb):
     value_cielab = [CIE_L, CIE_a, CIE_b]
     return(value_cielab)
 
+
+def Delta_E94(col1, col2):
+    L1 = col1[0]
+    a1 = col1[1]
+    b1 = col1[2]
+
+    L2 = col2[0]
+    a2 = col2[1]
+    b2 = col2[2]
+  
+    C1 = math.sqrt(a1**2 + b1**2)
+    C2 = math.sqrt(a2**2 + b2**2)
+
+    delta_Eab = math.sqrt((L2-L1)**2 + (a2-a1)**2 + (b2-b1)**2)
+    delta_L = L1 - L2
+    delta_Cab = C1 - C2
+    delta_Hab = delta_Eab**2 - delta_L**2 - delta_Cab**2
+    if delta_Hab > 0:
+        delta_Hab = math.sqrt(delta_Hab)
+    else:
+        delta_Hab = 0
+
+    kL = 1
+    kC = 1
+    kH = 1
+    K1 = 0.045
+    K2 = 0.015
+
+    SL = 1
+    SC = 1 + K1*C1
+    SH = 1 + K2*C1
+
+    delta_E94 = math.sqrt((delta_L/(kL*SL))**2 + (delta_Cab/(kC*SC))**2 +
+        (delta_Hab/kH*SH)**2)
+
+    return(delta_E94)
+
+
 def colors_are_similar(col1, col2, tl):
     col1 = rgb_2_cielab(col1)
     col2 = rgb_2_cielab(col2)
-    L = abs(col1[0]-col2[0])
-    a = abs(col1[1]-col2[1])
-    b = abs(col1[2]-col2[2])
-    return L <= tl and a <= tl and b <= tl
-    # return (r + g + b) <= tl
+    diff = Delta_E94(col1, col2)
+    return diff <= tl
 
 
 def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
@@ -247,11 +285,11 @@ if __name__ == "__main__":
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
-    tolerance = 16
+    tolerance = 45
     # frame_extractor(video_file, frames_dir)
 
     files = get_files(frames_dir)
-    files = files[92:93]  # for debugging purposes
+    files = files[0:1]  # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
