@@ -1,6 +1,7 @@
 import os
 import cv2
 import time
+from pyciede2000 import ciede2000
 import numpy as np
 from PIL import Image
 from datetime import timedelta
@@ -169,7 +170,7 @@ def rgb_2_xyz(value_rgb):
     return(value_xyz)
 
 
-def rgb_2_cielab(value_rgb):
+def rgb_2_lab(value_rgb):
     value_xyz = rgb_2_xyz(value_rgb)
     var_X = value_xyz[0]
     var_Y = value_xyz[1]
@@ -195,6 +196,59 @@ def rgb_2_cielab(value_rgb):
     return(value_cielab)
 
 
+def rgb2lab ( inputColor ) :
+
+   num = 0
+   RGB = [0, 0, 0]
+
+   for value in inputColor :
+       value = float(value) / 255
+
+       if value > 0.04045 :
+           value = ( ( value + 0.055 ) / 1.055 ) ** 2.4
+       else :
+           value = value / 12.92
+
+       RGB[num] = value * 100
+       num = num + 1
+
+   XYZ = [0, 0, 0,]
+
+   X = RGB [0] * 0.4124 + RGB [1] * 0.3576 + RGB [2] * 0.1805
+   Y = RGB [0] * 0.2126 + RGB [1] * 0.7152 + RGB [2] * 0.0722
+   Z = RGB [0] * 0.0193 + RGB [1] * 0.1192 + RGB [2] * 0.9505
+   XYZ[ 0 ] = round( X, 4 )
+   XYZ[ 1 ] = round( Y, 4 )
+   XYZ[ 2 ] = round( Z, 4 )
+
+   XYZ[ 0 ] = float( XYZ[ 0 ] ) / 95.047         # ref_X =  95.047   Observer= 2°, Illuminant= D65
+   XYZ[ 1 ] = float( XYZ[ 1 ] ) / 100.0          # ref_Y = 100.000
+   XYZ[ 2 ] = float( XYZ[ 2 ] ) / 108.883        # ref_Z = 108.883
+
+   num = 0
+   for value in XYZ :
+
+       if value > 0.008856 :
+           value = value ** ( 0.3333333333333333 )
+       else :
+           value = ( 7.787 * value ) + ( 16 / 116 )
+
+       XYZ[num] = value
+       num = num + 1
+
+   Lab = [0, 0, 0]
+
+   L = ( 116 * XYZ[ 1 ] ) - 16
+   a = 500 * ( XYZ[ 0 ] - XYZ[ 1 ] )
+   b = 200 * ( XYZ[ 1 ] - XYZ[ 2 ] )
+
+   Lab [ 0 ] = round( L, 4 )
+   Lab [ 1 ] = round( a, 4 )
+   Lab [ 2 ] = round( b, 4 )
+
+   return Lab
+
+
 def Delta_E94(col1, col2):
     L1 = col1[0]
     a1 = col1[1]
@@ -207,10 +261,10 @@ def Delta_E94(col1, col2):
     C1 = math.sqrt(a1**2 + b1**2)
     C2 = math.sqrt(a2**2 + b2**2)
 
-    delta_Eab = math.sqrt((L2-L1)**2 + (a2-a1)**2 + (b2-b1)**2)
+    delta_Eab = math.sqrt(((L2-L1)**2) + ((a2-a1)**2) + ((b2-b1)**2))
     delta_L = L1 - L2
     delta_Cab = C1 - C2
-    delta_Hab = delta_Eab**2 - delta_L**2 - delta_Cab**2
+    delta_Hab = (delta_Eab**2) - (delta_L**2) - (delta_Cab**2)
     if delta_Hab > 0:
         delta_Hab = math.sqrt(delta_Hab)
     else:
@@ -223,20 +277,32 @@ def Delta_E94(col1, col2):
     K2 = 0.015
 
     SL = 1
-    SC = 1 + K1*C1
-    SH = 1 + K2*C1
+    SC = 1 + (K1*C1)
+    SH = 1 + (K2*C1)
 
-    delta_E94 = math.sqrt((delta_L/(kL*SL))**2 + (delta_Cab/(kC*SC))**2 +
-        (delta_Hab/kH*SH)**2)
+    delta_E94 = math.sqrt(((delta_L/(kL*SL))**2) + ((delta_Cab/(kC*SC))**2) +
+        ((delta_Hab/kH*SH)**2))
 
     return(delta_E94)
 
 
 def colors_are_similar(col1, col2, tl):
-    col1 = rgb_2_cielab(col1)
-    col2 = rgb_2_cielab(col2)
-    diff = Delta_E94(col1, col2)
-    return diff <= tl
+    # [((127, 127, 127), 380899),
+    #  ((255, 251, 45), 75957), 
+    #  ((136, 0, 21), 65424),
+    #   ((255, 255, 33), 61200), 
+    #   ((63, 72, 204), 51800),
+    #    ((34, 177, 76), 34932), 
+    #    ((255, 255, 241), 12155),
+    #     ((255, 255, 255), 11270), 
+    #     ((180, 109, 36), 10692), 
+    #     ((255, 255, 251), 8875)]
+    # col1 = (255, 0, 0)
+    # col2 = (0, 255, 0)
+    col_1 = rgb2lab(col1)
+    col_2 = rgb2lab(col2)
+    diff = ciede2000(col_1, col_2)
+    return diff['delta_E_00'] <= tl
 
 
 def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
@@ -285,11 +351,11 @@ if __name__ == "__main__":
     video_file = "adventure_time.mkv"
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
-    tolerance = 45
+    tolerance = 16
     # frame_extractor(video_file, frames_dir)
 
     files = get_files(frames_dir)
-    files = files[0:1]  # for debugging purposes
+    files = files[36:37]  # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
@@ -312,6 +378,7 @@ if __name__ == "__main__":
 
     os.chdir(new_frames_dir)
     color_list = all_colors[:10]
+    print(color_list)
     frames(new_frames_dir, files, color_list, tolerance)
 
     et = time.time()
