@@ -351,12 +351,12 @@ if __name__ == "__main__":
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
 
-    tolerance = 16
+    tolerance = 2.3
     tl_type = "rgb"
     # frame_extractor(video_file, frames_dir)
 
     files = get_files(frames_dir)
-    files = files[36:37]  # for debugging purposes
+    files = files[0:1]  # for debugging purposes
 
     all_colors = collections.defaultdict(int)
     for image in files:
@@ -367,8 +367,13 @@ if __name__ == "__main__":
     all_colors = list(all_colors.items())
     all_colors.sort(key=lambda x: x[1], reverse=True)
 
-    rgb_list = apply_tolerance(all_colors, tolerance)
+    rgb_list = []
+    for col,occ in all_colors:
+        if occ >= 10:
+            rgb_list.append((col,occ))
     rgb_list.sort(key=lambda x: x[1], reverse=True)
+    print(len(rgb_list))
+    new_rgb_list = apply_tolerance(rgb_list, tolerance)
     # with open('colors.csv', 'w') as f:
     #     for rgb in rgb_list:
     #         f.write("%s,%s\n" % (rgb[0], rgb[1]))
@@ -377,14 +382,14 @@ if __name__ == "__main__":
     # hex_code = ()
     # change_color(frame, hex_code)
 
-    # os.chdir(new_frames_dir)
-    # color_list = all_colors[:10]
-    # print(color_list)
-    # frames(new_frames_dir, files, color_list, tolerance)
+    os.chdir(new_frames_dir)
+    color_list = new_rgb_list
+    print(color_list)
+    frames(new_frames_dir, files, color_list, tolerance)
 
-    min_occ = 7000
-    create_palette(tl_type, tolerance, min_occ, rgb_list, palette_dir)
-
+    # min_occ = 7000
+    # create_palette(tl_type, tolerance, min_occ, rgb_list, palette_dir)
+    print(len(new_rgb_list))
     et = time.time()
     elapsed_time = et - st
     print('Execution time:', elapsed_time, 'seconds')
