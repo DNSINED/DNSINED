@@ -92,19 +92,86 @@ def get_files(directory):
         full_paths.append(os.path.join(directory, file))
     return full_paths
 
+#3 try apply_tl in C(install gcc)
+def apply_tolerance_with_precalculation_lab(rgb_list, tl):
+    rgb_list = list(rgb_list)
+    rgb_list.sort(key=lambda x: x[1], reverse=True)
+    lab_list = []
+    for codes,occ in rgb_list:
+        lab_code = rgb_2_lab(codes)
+        lab_list.append((lab_code,occ))
+    duplicates = set()
+    for idx, (codes, occurrence) in enumerate(lab_list):
+        if codes not in duplicates:
+            for idx2 in range(idx + 1, len(lab_list)):
+                code = lab_list[idx2][0]
+                occ = lab_list[idx2][1]
+                if colors_are_similar(codes, code, tl):
+                    occurrence += occ
+                    lab_list[idx] = (codes, occurrence)
+                    duplicates.add(code)
 
-def apply_tolerance(rgb_list, tl):
+    rgb = []
+    for idx, (codes, occurrence) in enumerate(lab_list):
+        if codes not in duplicates:
+            rgb.append((rgb_list[idx], occurrence))
+
+    return (rgb)
+
+def apply_tolerance_with_precalculation_and_numpy_lab(rgb_list, tl):
+    rgb_list = list(rgb_list)
+    rgb_list.sort(key=lambda x: x[1], reverse=True)
+    lab_list = []
+    occ_list = np.empty(len(rgb_list))
+    for idx, (codes,occ) in enumerate(rgb_list):
+        lab_code = rgb_2_lab(codes)
+        lab_list.append((lab_code,occ))
+        occ_list[idx] = occ 
+    
+    duplicates = np.full(len(lab_list), False)
+
+    for idx, (codes, occurrence) in enumerate(lab_list):
+        if not duplicates[idx]:
+            deltas = Delta_E94_array(col, lab_list[idx + 1:])
+            # calculeaza deltas cu un for
+            # deltas = np.full(len(lab_list[idx + 1:]), 0)
+            # for idx2, (code, occ) in enumerate(lab_list[idx + 1:]):
+            #     deltas[idx2] = Delta_E94_array(codes, code)
+
+            similar = deltas < tl
+
+            # update duplicates
+            view = duplicates[idx + 1:]
+            combined = similar | view
+            np.copyto(view, combined)
+
+            # update occurrence
+            view_occ = occ_list[idx + 1:]
+            exlude = np.logical_not(similar)
+            relevant_occ = np.ma.MaskedArray(view_occ, exlude)
+            extra_occ = relevant_occ.sum()
+            lab_list[idx] = (codes, occurrence + extra_occ)
+
+    rgb = []
+    for idx, (codes, occurrence) in enumerate(lab_list):
+        if not duplicates[idx]:
+            rgb.append((rgb_list[idx], occurrence))
+
+    return (rgb)
+
+def apply_tolerance_rgb(rgb_list, tl):
     rgb_list = list(rgb_list)
     rgb_list.sort(key=lambda x: x[1], reverse=True)
     duplicates = set()
     for idx, (codes, occurrence) in enumerate(rgb_list):
-        for idx2 in range(idx + 1, len(rgb_list)):
-            code = rgb_list[idx2][0]
-            occ = rgb_list[idx2][1]
-            if colors_are_similar(codes, code, tl):
-                occurrence += occ
-                rgb_list[idx] = (codes, occurrence)
-                duplicates.add(code)
+        if codes not in duplicates:
+            for idx2 in range(idx + 1, len(rgb_list)):
+                code = rgb_list[idx2][0]
+                occ = rgb_list[idx2][1]
+                if colors_are_similar_rgb(codes, code, tl):
+                    occurrence += occ
+                    rgb_list[idx] = (codes, occurrence)
+                    duplicates.add(code)
 
     rgb = []
     for codes, occurrence in rgb_list:
@@ -113,6 +180,26 @@ def apply_tolerance(rgb_list, tl):
 
     return (rgb)
 
+def apply_tolerance_without_precalculation_lab(rgb_list, tl):
+    rgb_list = list(rgb_list)
+    rgb_list.sort(key=lambda x: x[1], reverse=True)
+    duplicates = set()
+    for idx, (codes, occurrence) in enumerate(rgb_list):
+        if codes not in duplicates:
+            for idx2 in range(idx + 1, len(rgb_list)):
+                code = rgb_list[idx2][0]
+                occ = rgb_list[idx2][1]
+                if colors_are_similar_with_conversion_to_lab(codes, code, tl):
+                    occurrence += occ
+                    rgb_list[idx] = (codes, occurrence)
+                    duplicates.add(code)
+
+    rgb = []
+    for codes, occurrence in rgb_list:
+        if codes not in duplicates:
+            rgb.append((codes, occurrence))
+
+    return (rgb)
 
 def hex_2_rgb(value):
     value = value.lstrip('#')
@@ -194,11 +281,54 @@ def rgb_2_lab(value_rgb):
     CIE_a = 500 * ( var_X - var_Y )
     CIE_b = 200 * ( var_Y - var_Z )
 
-    value_cielab = [CIE_L, CIE_a, CIE_b]
+    value_cielab = (CIE_L, CIE_a, CIE_b)
     return(value_cielab)
 
+def Delta_E94_array(col1, col_list):
+
+    L1 = col1[0]
+    a1 = col1[1]
+    b1 = col1[2]
+
+    L2_list = []
+    a2_list = []
+    b2_list = []
+    occ_list = []
+
+    for (L2,a2,b2),occ in col_list:
+        L2_list.append(L2)
+        a2_list.append(a2)
+        b2_list.append(b2)
+        # occ_list.append(occ)
+    
+    L2_array = np.array(L2_list)
+    a2_array = np.array(a2_list)
+    b2_array = np.array(b2_list)
+
+    C1 = math.sqrt(a1**2 + b1**2)
+
+    C2 = np.sqrt(a2_array**2 + b2_array**2)
+
+    delta_Eab = np.sqrt(((L2_array-L1)**2) + ((a2_array-a1)**2) + ((b2_array-b1)**2))
+    delta_L = L1 - L2_array
+    delta_Cab = C1 - C2
+    delta_Hab = (delta_Eab**2) - (delta_L**2) - (delta_Cab**2)
+    delta_Hab = delta_Hab.clip(min=0)
+    delta_Hab = np.sqrt(delta_Hab) 
+
+    K1 = 0.045
+    K2 = 0.015
+
+    SC = 1 + (K1*C1)
+    SH = 1 + (K2*C1)
+
+    delta_E94 = np.sqrt((delta_L**2) + ((delta_Cab/SC)**2) + ((delta_Hab/SH)**2))
+
+    return(delta_E94)
 
 def Delta_E94(col1, col2):
+    #2 numpy , siruri pt col 2
+
     L1 = col1[0]
     a1 = col1[1]
     b1 = col1[2]
@@ -236,14 +366,21 @@ def Delta_E94(col1, col2):
 
 
 def colors_are_similar(col1, col2, tl):
-    col_1 = rgb_2_lab(col1)
-    col_2 = rgb_2_lab(col2)
-
-    # diff = ciede2000(col_1, col_2)
+    # diff = ciede2000(col1, col2)
     # return diff['delta_E_00'] <= tl
 
-    diff = Delta_E94(col_1, col_2)
+    diff = Delta_E94(col1, col2)
     return (diff <= tl)
+
+def colors_are_similar_with_conversion_to_lab(col1, col2, tl):
+    col1 = rgb_2_lab(col1)
+    col2 = rgb_2_lab(col2)
+
+    diff = Delta_E94(col1, col2)
+    return (diff <= tl)
+
+def colors_are_similar_rgb(col1, col2, tl):
+    return abs(col1[0] - col2[0]) + abs(col1[1] - col2[1]) + abs(col1[2] - col2[2]) < tl
     
 
 
@@ -266,6 +403,7 @@ def get_palette_name(tl_type, tl, min_occ, len):
     palette_name = f'palette-{tl_type}-{tl}-{min_occ}-{len}'
     return(palette_name)
 
+
 def save_palette_as_text(colors, file):
     with open (file,'w') as f:
         for col in colors:
@@ -285,7 +423,6 @@ def save_palette_as_image(colors, file, square_size):
             x = 0
     img = img.resize((100*w,100*h), Image.NEAREST)
     img.save(file)
-
 
 
 def create_palette(tolerance_type, tolerance, minimum_occurrences, color_list, dir):
@@ -351,7 +488,7 @@ if __name__ == "__main__":
     frames_dir, _ = os.path.splitext(video_file)
     frames_dir += "_frames"
 
-    tolerance = 2.3
+    tolerance = 4
     tl_type = "rgb"
     # frame_extractor(video_file, frames_dir)
 
@@ -373,23 +510,68 @@ if __name__ == "__main__":
             rgb_list.append((col,occ))
     rgb_list.sort(key=lambda x: x[1], reverse=True)
     print(len(rgb_list))
-    new_rgb_list = apply_tolerance(rgb_list, tolerance)
-    # with open('colors.csv', 'w') as f:
-    #     for rgb in rgb_list:
-    #         f.write("%s,%s\n" % (rgb[0], rgb[1]))
 
-    # frame = ""
-    # hex_code = ()
-    # change_color(frame, hex_code)
+    with open('ceva.txt', 'w') as file:
+        for el in rgb_list:
+            file.write("%d %d %d %d\n" % (el[0][0], el[0][1], el[0][2], el[1]))
+    
+    rgb_list = []
 
-    os.chdir(new_frames_dir)
-    color_list = new_rgb_list
-    print(color_list)
-    frames(new_frames_dir, files, color_list, tolerance)
+    with open('ceva.txt', 'r') as file:
+        lines = file.readlines()
+    for line in lines:
+        el = line.split()
+        rgb_list.append(((int(el[0]), int(el[1]), int(el[2])), int(el[3])))
 
-    # min_occ = 7000
-    # create_palette(tl_type, tolerance, min_occ, rgb_list, palette_dir)
-    print(len(new_rgb_list))
+
+    # print('original: ', len(rgb_list))
+
+    # st = time.time()
+    # new_rgb_list = apply_tolerance_rgb(rgb_list.copy(), 45)
+    # et = time.time()
+    # elapsed_time = et - st
+    # print('rgb len: ', len(new_rgb_list))
+    # print('Execution time (rgb):', elapsed_time, 'seconds')
+
+    st = time.time()
+    new_rgb_list = apply_tolerance_with_precalculation_lab(rgb_list.copy(), 13)
     et = time.time()
     elapsed_time = et - st
-    print('Execution time:', elapsed_time, 'seconds')
+    print('lab len: ', len(new_rgb_list))
+    print('Execution time (lab - precalculation):', elapsed_time, 'seconds')
+
+    st = time.time()
+    new_rgb_list = apply_tolerance_with_precalculation_and_numpy_lab(rgb_list.copy(), 13)
+    et = time.time()
+    elapsed_time = et - st
+    print('lab len: ', len(new_rgb_list))
+    print('Execution time (lab - precalculation + numpy):', elapsed_time, 'seconds')
+
+    # st = time.time()
+    # new_rgb_list = apply_tolerance_without_precalculation_lab(rgb_list.copy(), 13)
+    # et = time.time()
+    # elapsed_time = et - st
+    # print('lab len: ', len(new_rgb_list))
+    # print('Execution time (lab - NO precalculation):', elapsed_time, 'seconds')
+    
+
+    # new_rgb_list.sort(key=lambda x: x[1], reverse=True)
+    # # with open('colors.csv', 'w') as f:
+    # #     for rgb in rgb_list:
+    # #         f.write("%s,%s\n" % (rgb[0], rgb[1]))
+
+    # # frame = ""
+    # # hex_code = ()
+    # # change_color(frame, hex_code)
+
+    # os.chdir(new_frames_dir)
+    # color_list = new_rgb_list
+    # print(color_list)
+    # frames(new_frames_dir, files, color_list, tolerance)
+
+    # # min_occ = 7000
+    # # create_palette(tl_type, tolerance, min_occ, rgb_list, palette_dir)
+    # print(len(new_rgb_list))
+    # et = time.time()
+    # elapsed_time = et - st
+    # print('Execution time:', elapsed_time, 'seconds')
