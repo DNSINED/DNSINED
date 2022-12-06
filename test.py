@@ -120,23 +120,50 @@ def apply_tolerance_with_precalculation_lab(rgb_list, tl):
 
 def apply_tolerance_with_precalculation_and_numpy_lab(rgb_list, tl):
     rgb_list = list(rgb_list)
-    rgb_list.sort(key=lambda x: x[1], reverse=True)
-    lab_list = []
+    rgb_list.sort(key=lambda x: x[1], reverse=True)   
     occ_list = np.empty(len(rgb_list))
+
+    lab_list = []
+    L_list = []
+    a_list = []
+    b_list = []
+
+    t_1 = time.time()
+
+    # 1 for
     for idx, (codes,occ) in enumerate(rgb_list):
-        lab_code = rgb_2_lab(codes)
-        lab_list.append((lab_code,occ))
+        L, a, b = rgb_2_lab(codes)
+        L_list.append(L)
+        a_list.append(a)
+        b_list.append(b)
+        value_cielab = (L, a, b)
+        lab_list.append((value_cielab, occ))
         occ_list[idx] = occ 
     
+
+    # 2 fors
+    # for idx, (codes,occ) in enumerate(rgb_list):
+    #     codes = rgb_2_lab(codes)
+    #     lab_list.append((codes, occ))
+    #     occ_list[idx] = occ 
+    
+    # for idx,((L, a, b), occ) in enumerate(lab_list):
+    #     L_list.append(L)
+    #     a_list.append(a)
+    #     b_list.append(b)
+    
+    t1 = time.time()
+    time_1 = t1 - t_1
+    print(time_1)
     duplicates = np.full(len(lab_list), False)
 
-    for idx, (codes, occurrence) in enumerate(lab_list):
+    for idx, (L, a, b, occurrence) in enumerate(zip(L_list, a_list, b_list, occ_list)):
         if not duplicates[idx]:
-            deltas = Delta_E94_array(col, lab_list[idx + 1:])
+            deltas = Delta_E94_array(codes, L_list[idx + 1:], a_list[idx + 1:], b_list[idx + 1:])
             # calculeaza deltas cu un for
             # deltas = np.full(len(lab_list[idx + 1:]), 0)
             # for idx2, (code, occ) in enumerate(lab_list[idx + 1:]):
-            #     deltas[idx2] = Delta_E94_array(codes, code)
+            #     deltas[idx2] = Delta_E94(codes, code)
 
             similar = deltas < tl
 
@@ -281,29 +308,18 @@ def rgb_2_lab(value_rgb):
     CIE_a = 500 * ( var_X - var_Y )
     CIE_b = 200 * ( var_Y - var_Z )
 
-    value_cielab = (CIE_L, CIE_a, CIE_b)
-    return(value_cielab)
+    # value_cielab = (CIE_L, CIE_a, CIE_b)
+    # return(value_cielab)
+    return(CIE_L, CIE_a, CIE_b)
 
-def Delta_E94_array(col1, col_list):
-
+def Delta_E94_array(col1, L2, a2, b2):
     L1 = col1[0]
     a1 = col1[1]
     b1 = col1[2]
-
-    L2_list = []
-    a2_list = []
-    b2_list = []
-    occ_list = []
-
-    for (L2,a2,b2),occ in col_list:
-        L2_list.append(L2)
-        a2_list.append(a2)
-        b2_list.append(b2)
-        # occ_list.append(occ)
-    
-    L2_array = np.array(L2_list)
-    a2_array = np.array(a2_list)
-    b2_array = np.array(b2_list)
+  
+    L2_array = np.array(L2)
+    a2_array = np.array(a2)
+    b2_array = np.array(b2)
 
     C1 = math.sqrt(a1**2 + b1**2)
 
