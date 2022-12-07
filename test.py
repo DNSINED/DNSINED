@@ -130,27 +130,14 @@ def apply_tolerance_with_precalculation_and_numpy_lab(rgb_list, tl):
 
     t_1 = time.time()
 
-    # 1 for
-    # for idx, (codes,occ) in enumerate(rgb_list):
-    #     L, a, b = rgb_2_lab(codes)
-    #     L_list.append(L)
-    #     a_list.append(a)
-    #     b_list.append(b)
-    #     value_cielab = (L, a, b)
-    #     lab_list.append((value_cielab, occ))
-    #     occ_list[idx] = occ 
-    
-
-    # 2 fors
-    # for idx, (codes,occ) in enumerate(rgb_list):
-    #     codes = rgb_2_lab(codes)
-    #     lab_list.append((codes, occ))
-    #     occ_list[idx] = occ 
-    
-    # for idx,((L, a, b), occ) in enumerate(lab_list):
-    #     L_list.append(L)
-    #     a_list.append(a)
-    #     b_list.append(b)
+    for idx, (codes,occ) in enumerate(rgb_list):
+        L, a, b = rgb_2_lab(codes)
+        L_list.append(L)
+        a_list.append(a)
+        b_list.append(b)
+        value_cielab = (L, a, b)
+        lab_list.append((value_cielab, occ))
+        occ_list[idx] = occ 
     
     t1 = time.time()
     time_1 = t1 - t_1
@@ -158,13 +145,15 @@ def apply_tolerance_with_precalculation_and_numpy_lab(rgb_list, tl):
     duplicates = np.full(len(lab_list), False)
 
     # for idx, (L, a, b, occurrence) in enumerate(zip(L_list, a_list, b_list, occ_list)):
-    # for idx, (codes, occurrence) in enumerate(lab_list):
+    for idx, (codes, occurrence) in enumerate(lab_list):
         if not duplicates[idx]:
-            # deltas = Delta_E94_array(L, a, b, L_list[idx + 1:], a_list[idx + 1:], b_list[idx + 1:])
-            # calculeaza deltas cu un for
             # deltas = np.full(len(lab_list[idx + 1:]), 0)
-            # for idx2, (code, occ) in enumerate(lab_list[idx + 1:]):
-            #     deltas[idx2] = Delta_E94(codes, code)
+            # deltas = Delta_E94_array(L, a, b, L_list[idx + 1:], a_list[idx + 1:], b_list[idx + 1:])
+            
+            # calculeaza deltas cu un for
+            deltas = np.full(len(lab_list[idx + 1:]), 0)
+            for idx2, (code, occ) in enumerate(lab_list[idx + 1:]):
+                deltas[idx2] = Delta_E94(codes, code)
 
             similar = deltas < tl
 
@@ -179,11 +168,20 @@ def apply_tolerance_with_precalculation_and_numpy_lab(rgb_list, tl):
             relevant_occ = np.ma.MaskedArray(view_occ, exlude)
             extra_occ = relevant_occ.sum()
             lab_list[idx] = (codes, occurrence + extra_occ)
-
+    
     rgb = []
     for idx, (codes, occurrence) in enumerate(lab_list):
         if not duplicates[idx]:
-            rgb.append((rgb_list[idx], occurrence))
+            rgb.append((rgb_list[idx][0], occurrence))
+    
+    # for idx, (L, a, b, occurrence) in enumerate(zip(L_list, a_list, b_list, occ_list)):
+    #     if not duplicates[idx]:
+    #         rgb.append((rgb_list[idx][0], occurrence))
+
+    # with open('duplicates_no_numpy.csv', 'w') as f:
+    #     for rgb in duplicates:
+    #         f.write("%s\n" % (rgb))
+
 
     return (rgb)
 
@@ -309,14 +307,12 @@ def rgb_2_lab(value_rgb):
     CIE_a = 500 * ( var_X - var_Y )
     CIE_b = 200 * ( var_Y - var_Z )
 
-    # value_cielab = (CIE_L, CIE_a, CIE_b)
-    # return(value_cielab)
-    # return(CIE_L, CIE_a, CIE_b)
+    return(CIE_L, CIE_a, CIE_b)
 
-def Delta_E94_array(L1, a1, b1, L2, a2, b2): 
-    L2_array = np.array(L2)
-    a2_array = np.array(a2)
-    b2_array = np.array(b2)
+def Delta_E94_array(L1, a1, b1, L2_list, a2_list, b2_list): 
+    L2_array = np.array(L2_list)
+    a2_array = np.array(a2_list)
+    b2_array = np.array(b2_list)
 
     C1 = math.sqrt(a1**2 + b1**2)
 
@@ -373,7 +369,7 @@ def Delta_E94(col1, col2):
     SH = 1 + (K2*C1)
 
     delta_E94 = math.sqrt(((delta_L/(kL*SL))**2) + ((delta_Cab/(kC*SC))**2) +
-        ((delta_Hab/kH*SH)**2))
+        ((delta_Hab/(kH*SH))**2))
 
     return(delta_E94)
 
@@ -558,11 +554,17 @@ if __name__ == "__main__":
     et = time.time()
     elapsed_time = et - st
     print('lab len: ', len(new_rgb_list))
-    print('lab colors:', new_rgb_list)
     print('Execution time (lab - precalculation + numpy):', elapsed_time, 'seconds')
-    with open('colors_without_numpy.csv', 'w') as f:
-        for rgb in new_rgb_list:
-            f.write("%s,%s\n" % (rgb[0], rgb[1]))
+
+    # st = time.time()
+    # test = [((23, 209, 235), 43567), ((222, 40, 40), 30215)]
+    # new_rgb_list = apply_tolerance_with_precalculation_and_numpy_lab(test, 13)
+    # et = time.time()
+    # elapsed_time = et - st
+    # print('lab len: ', len(new_rgb_list))
+    # print('lab colors:', new_rgb_list)
+    # print('Execution time (lab - precalculation + numpy):', elapsed_time, 'seconds')
+    
 
     # st = time.time()
     # new_rgb_list = apply_tolerance_without_precalculation_lab(rgb_list.copy(), 13)
