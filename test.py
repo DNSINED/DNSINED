@@ -362,10 +362,16 @@ def save_palette_as_image(colors, file, square_size):
     img.save(file)
 
 
+def rgb_to_hex(r, g, b):
+  hex_code = ('{:X}{:X}{:X}').format(r, g, b)
+  return(hex_code)
+
+
 def save_palette_as_text(colors, file):
     with open (file,'w') as f:
-        for col in colors:
-            f.write("%s\n" % str(col))
+        for col,hue in colors:
+            hex_code = rgb_to_hex(col[0], col[1], col[2])
+            f.write("%s\n" % hex_code)
 
 
 def get_palette_name(tl_type, tl, min_occ, len):
