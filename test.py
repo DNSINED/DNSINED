@@ -149,6 +149,31 @@ def rgb_2_lab(value_rgb):
     return(CIE_L, CIE_a, CIE_b)
 
 
+def rgb_2_lab(list_rgb):
+    value_xyz = rgb_2_xyz(list_rgb)
+    var_X = value_xyz[0] / 95.044
+    var_Y = value_xyz[1] / 100.000
+    var_Z = value_xyz[2] / 108.755
+    if ( var_X > 0.008856 ):
+        var_X = var_X ** ( 1/3 )
+    else:                   
+        var_X = ( 7.787 * var_X ) + ( 16 / 116 )
+    if ( var_Y > 0.008856 ):
+        var_Y = var_Y ** ( 1/3 )
+    else:                   
+        var_Y = ( 7.787 * var_Y ) + ( 16 / 116 )
+    if ( var_Z > 0.008856 ):
+        var_Z = var_Z ** ( 1/3 )
+    else:                    
+        var_Z = ( 7.787 * var_Z ) + ( 16 / 116 )
+
+    CIE_L = ( 116 * var_Y ) - 16
+    CIE_a = 500 * ( var_X - var_Y )
+    CIE_b = 200 * ( var_Y - var_Z )
+
+    return(CIE_L, CIE_a, CIE_b)
+
+
 def Delta_E94_array(L1, a1, b1, L2_list, a2_list, b2_list): 
     L2_array = np.array(L2_list)
     a2_array = np.array(a2_list)
@@ -198,14 +223,9 @@ def apply_tolerance_color(rgb_list, tl):
     duplicates = np.full(len(lab_list), False)
 
     for idx, (L, a, b, occurrence) in enumerate(zip(L_list, a_list, b_list, occ_list)):
-    # for idx, (codes, occurrence) in enumerate(lab_list):
         if not duplicates[idx]:
             deltas = np.full(len(lab_list[idx + 1:]), 0)
             deltas = Delta_E94_array(L, a, b, L_list[idx + 1:], a_list[idx + 1:], b_list[idx + 1:])
-
-            # deltas = np.full(len(lab_list[idx + 1:]), 0)
-            # for idx2, (code, occ) in enumerate(lab_list[idx + 1:]):
-                # deltas[idx2] = Delta_E94(codes, code)
 
             similar = deltas < tl
 
@@ -271,18 +291,41 @@ def colors_are_similar(col1, col2, tl):
 
 
 def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
-    img = Image.open(frame)
-    img = img.convert("RGB")
+    img = cv2.imread(frame)
 
-    data_rgb = list(img.getdata())
-    new_image = []
-    for code in data_rgb:
-        if colors_are_similar(code, code_rgb[0], tl):
-            new_image.append((255, 0, 0))
-        else:
-            new_image.append(code)
-    img.putdata(new_image)
-    img.save(result_frame)
+    print(len(img))
+    print(len(img[0]))
+    print(img[0][0])
+
+
+    # L, a, b = rgb_2_lab(code_rgb[0])
+    for h in range(0, len(img)):
+        # L1 = img[:len(img[0][0])]
+        # deltas = Delta_E94_array(L, a, b, img[:len(img[0])][0], img[:len(img[0])][1], img[:len(img[0])][2])
+
+        for w in range(0, len(img[0])):
+            L, a, b = rgb_2_lab(img[h][w])
+            # if colors_are_similar(Lab1, Lab2, tl):
+            img[h][w][0] = L
+            img[h][w][1] = a
+            img[h][w][2] = b
+
+    cv2.imwrite(result_frame, img)
+     
+    # img = Image.open(frame)
+    # img = img.convert("RGB")
+
+    # data_rgb = list(img.getdata())
+    # new_image = []
+    # Lab2 = rgb_2_lab(code_rgb[0])
+    # for code in data_rgb:
+    #     Lab1 = rgb_2_lab(code)
+    #     if colors_are_similar(Lab1, Lab2, tl):
+    #         new_image.append((255, 0, 0))
+    #     else:
+    #         new_image.append(code)
+    # img.putdata(new_image)
+    # img.save(result_frame)
 
 
 def rgb_code(frame, color_list, tl):
@@ -305,23 +348,24 @@ def frames(parent_dir, frame_list, color_list, tl):
 
 def save_palette_as_image(colors, file, square_size):
     w, h = square_size, square_size
-    img = Image.new(mode = "HSV", size = (w,h))
+    img = Image.new(mode = "RGB", size = (w,h))
     pixels = img.load()
     x, y = 0, 0
-    for col in colors:
-        pixels[x,y] = col     
+    for col,hue in colors:
+        pixels[x,y] = col
         x += 1
         if x == w:
             y += 1
             x = 0
     img = img.resize((100*w,100*h), Image.NEAREST)
+    # img.show()
     img.save(file)
 
 
 def save_palette_as_text(colors, file):
     with open (file,'w') as f:
         for col in colors:
-            f.write("%s,%s\n" % col)
+            f.write("%s\n" % str(col))
 
 
 def get_palette_name(tl_type, tl, min_occ, len):
@@ -330,18 +374,39 @@ def get_palette_name(tl_type, tl, min_occ, len):
 
 
 def sort_colors(colors):
-    colors.sort()
+    colors.sort(key=lambda a: a[1])
     return(colors)
 
 
+def rgb_to_hsv(r, g, b):
+    r, g, b = r/255.0, g/255.0, b/255.0
+    mx = max(r, g, b)
+    mn = min(r, g, b)
+    df = mx-mn
+    if mx == mn:
+        h = 0
+    elif mx == r:
+        h = (60 * ((g-b)/df) + 360) % 360
+    elif mx == g:
+        h = (60 * ((b-r)/df) + 120) % 360
+    elif mx == b:
+        h = (60 * ((r-g)/df) + 240) % 360
+    if mx == 0:
+        s = 0
+    else:
+        s = (df/mx)*100
+    v = mx*100
+    return h, s, v
+
+
 def extract_palette(min_occ, list): 
-    palette_list = []
+    rgb_palette = []
     for col,occ in list:
         if occ>=min_occ:
-            col = colorsys.rgb_to_hsv(col)
-            palette_list.append(col)
+            h, s, v = rgb_to_hsv(col[0], col[1], col[2])
+            rgb_palette.append((col, h))
 
-    return(palette_list)
+    return(rgb_palette)
 
 
 def create_palette(tolerance_type, tolerance, minimum_occurrences, color_list, dir):
@@ -353,7 +418,8 @@ def create_palette(tolerance_type, tolerance, minimum_occurrences, color_list, d
 	
 	save_palette_as_text(colors, f'{dir}/{palette_name}.txt')
 
-	square_size = math.sqrt(len(colors))
+	square_size = math.ceil(math.sqrt(len(colors)))
+
 	if len(colors) < 1000:
 		save_palette_as_image(colors, f'{dir}/{palette_name}.png', square_size)
 
@@ -429,14 +495,14 @@ if __name__ == "__main__":
     # frames(new_frames_dir, files, color_list, tolerance)
 
     # test
-    test = color_list[:10]
-    frames(new_frames_dir, files, test, tolerance)
+    # test = color_list[:1]
+    # frames(new_frames_dir, files, test, tolerance)
 
 
 
 
-    # min_occ = 7000
-    # create_palette(tl_type, tolerance, min_occ, rgb_list, palette_dir)
+    min_occ = 7000
+    create_palette(tl_type, tolerance, min_occ, rgb_list, palette_dir)
     
     # optional feature:
     # frame = ""
