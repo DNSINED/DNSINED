@@ -363,7 +363,7 @@ def save_palette_as_image(colors, file, square_size):
 
 
 def rgb_to_hex(r, g, b):
-  hex_code = ('{:X}{:X}{:X}').format(r, g, b)
+  hex_code = '%02X%02X%02X' % (r, g, b)
   return(hex_code)
 
 
