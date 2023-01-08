@@ -234,8 +234,8 @@ def apply_tolerance_color(rgb_list, tl):
             np.copyto(view, combined)
 
             view_occ = occ_list[idx + 1:]
-            exlude = np.logical_not(similar)
-            relevant_occ = np.ma.MaskedArray(view_occ, exlude)
+            exclude = np.logical_not(similar)
+            relevant_occ = np.ma.MaskedArray(view_occ, exclude)
             extra_occ = relevant_occ.sum()
             lab_list[idx] = (codes, occurrence + extra_occ)
     
@@ -311,7 +311,7 @@ def apply_tolerance_frame(frame, result_frame, code_rgb, tl):
             img[h][w][2] = b
 
     cv2.imwrite(result_frame, img)
-     
+    duplicates = np.full(len(img), False) 
     # img = Image.open(frame)
     # img = img.convert("RGB")
 
@@ -503,8 +503,6 @@ if __name__ == "__main__":
     # test
     # test = color_list[:1]
     # frames(new_frames_dir, files, test, tolerance)
-
-
 
 
     min_occ = 7000
